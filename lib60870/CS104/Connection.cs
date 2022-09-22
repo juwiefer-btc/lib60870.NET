@@ -1513,14 +1513,22 @@ namespace lib60870.CS104
             socket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            LingerOption lingerOption = new LingerOption(true, 0);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
+            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, false);
+            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 0);
+            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 0);
+
             if (LocalIpAddress != null)
             {
                 try
                 {
                     socket.Bind(new IPEndPoint(IPAddress.Parse(localIpAddress), localTcpPort));
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                     throw new SocketException(87); // wrong argument
                 }
             }
@@ -1548,7 +1556,23 @@ namespace lib60870.CS104
             }
             else
             {
-                socket.Close();
+                if (socket.Connected)
+                {
+                    try
+                    {
+                        //socket.Shutdown(SocketShutdown.Both);
+                        socket.Shutdown(SocketShutdown.Receive);
+                    }
+                    catch (SocketException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
+                    socket.Disconnect(true);
+                }
+                    
+
+                socket.Close(0);
                 socket = null;
 
                 throw new SocketException(10060); // Connection timed out (WSAETiMEDOUT)
@@ -1892,18 +1916,28 @@ namespace lib60870.CS104
                         DebugLog("CLOSE CONNECTION!");
 
                         // Release the socket.
-                        try
-                        {
-                            socket.Shutdown(SocketShutdown.Both);
-                        }
-                        catch (SocketException)
-                        {
-                        }
+                       
 
                         running = false;
                         socketError = true;
 
-                        socket.Close();
+                        if (socket.Connected)
+                        {
+                            try
+                            {
+                                //socket.Shutdown(SocketShutdown.Both);
+                                socket.Shutdown(SocketShutdown.Receive);
+                            }
+                            catch (SocketException ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
+
+                            socket.Disconnect(true);
+                        }
+                            
+
+                        socket.Close(0);
 
                         netStream.Dispose();
 
@@ -1960,7 +1994,27 @@ namespace lib60870.CS104
         public void Cancel()
         {
             if (socket != null)
-                socket.Close();
+            {
+                if (socket.Connected)
+                {
+                    try
+                    {
+                        //socket.Shutdown(SocketShutdown.Both);
+                        socket.Shutdown(SocketShutdown.Receive);
+                    }
+                    catch (SocketException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
+                    socket.Disconnect(true);
+
+                }
+                    
+
+                socket.Close(0);
+            }
+                
         }
 
         public void Close()
