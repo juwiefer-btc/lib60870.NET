@@ -21,6 +21,8 @@
 
 
 using System;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace lib60870.CS101
 {
@@ -97,19 +99,8 @@ namespace lib60870.CS101
     public class Slave
     {
 
-        protected bool debugOutput;
-
-        public bool DebugOutput
-        {
-            get
-            {
-                return this.debugOutput;
-            }
-            set
-            {
-                debugOutput = value;
-            }
-        }
+        protected ILogger<Slave> logger = NullLogger<Slave>.Instance;
+        public ILogger<Slave> Logger { get => logger; set { logger = value; }}
 
         public InterrogationHandler interrogationHandler = null;
         public object InterrogationHandlerParameter = null;

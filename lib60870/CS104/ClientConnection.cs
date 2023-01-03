@@ -32,6 +32,8 @@ using System.IO;
 using lib60870;
 using lib60870.CS101;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace lib60870.CS104
 {
@@ -46,13 +48,7 @@ namespace lib60870.CS104
 
         private void DebugLog(string msg)
         {
-            if (debugOutput)
-            {
-                Console.Write("CS104 SLAVE CONNECTION ");
-                Console.Write(connectionID);
-                Console.Write(": ");
-                Console.WriteLine(msg);
-            }
+            logger.LogInformation("CS104 SLAVE CONNECTION " + connectionID + ": " + msg);
         }
 
         static byte[] STARTDT_CON_MSG = new byte[] { 0x68, 0x04, 0x0b, 0x00, 0x00, 0x00 };
@@ -173,7 +169,7 @@ namespace lib60870.CS104
             }
         }
 
-        internal ClientConnection(Socket socket, TlsSecurityInformation tlsSecInfo, APCIParameters apciParameters, ApplicationLayerParameters parameters, Server server, ASDUQueue asduQueue, bool debugOutput)
+        internal ClientConnection(Socket socket, TlsSecurityInformation tlsSecInfo, APCIParameters apciParameters, ApplicationLayerParameters parameters, Server server, ASDUQueue asduQueue, ILogger<ClientConnection> logger)
         {
             connectionsCounter++;
             connectionID = connectionsCounter;
@@ -184,7 +180,7 @@ namespace lib60870.CS104
             this.alParameters = parameters;
             this.server = server;
             this.asduQueue = asduQueue;
-            this.debugOutput = debugOutput;
+            this.logger = logger;
 
             ResetT3Timeout((UInt64)SystemUtils.currentTimeMillis());
 
@@ -300,7 +296,7 @@ namespace lib60870.CS104
 
         private bool running = false;
 
-        private bool debugOutput = true;
+        private ILogger<ClientConnection> logger = NullLogger<ClientConnection>.Instance;
 
         private int readState = 0; /* 0 - idle, 1 - start received, 2 - reading remaining bytes */
         private int currentReadPos = 0;
@@ -460,7 +456,7 @@ namespace lib60870.CS104
 
         private void PrintSendBuffer()
         {
-            if (debugOutput)
+            if (logger != NullLogger<ClientConnection>.Instance)
             {
                 if (oldestSentASDU != -1)
                 {

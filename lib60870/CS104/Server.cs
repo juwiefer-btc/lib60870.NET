@@ -28,6 +28,8 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 
 using lib60870.CS101;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace lib60870.CS104
 {
@@ -531,6 +533,8 @@ namespace lib60870.CS104
     /// </summary>
     public class Server : CS101.Slave
     {
+        private ILoggerFactory loggerFactory = null;
+        public ILoggerFactory LoggerFactory { get => loggerFactory; set { loggerFactory = value; }}
         private string localHostname = "0.0.0.0";
         private int localPort = 2404;
 
@@ -574,11 +578,7 @@ namespace lib60870.CS104
 
         private void DebugLog(string msg)
         {
-            if (debugOutput)
-            {
-                Console.Write("CS104 SLAVE: ");
-                Console.WriteLine(msg);
-            }
+            logger.LogInformation("CS101 SLAVE: " + msg);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace lib60870.CS104
                                 {
 
                                     connection = new ClientConnection(newSocket, securityInfo, apciParameters, alParameters, this,
-                                        matchingGroup.asduQueue, debugOutput);
+                                        matchingGroup.asduQueue, loggerFactory?.CreateLogger<ClientConnection>() ?? NullLogger<ClientConnection>.Instance);
 
                                     matchingGroup.AddConnection(connection);
 
@@ -865,7 +865,7 @@ namespace lib60870.CS104
                             else
                             {
                                 connection = new ClientConnection(newSocket, securityInfo, apciParameters, alParameters, this,
-                                    new ASDUQueue(maxQueueSize, enqueueMode, alParameters, DebugLog), debugOutput);
+                                    new ASDUQueue(maxQueueSize, enqueueMode, alParameters, DebugLog), loggerFactory?.CreateLogger<ClientConnection>() ?? NullLogger<ClientConnection>.Instance);
                             }
 
                             if (connection != null)

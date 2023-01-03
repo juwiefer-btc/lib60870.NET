@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using lib60870;
 using lib60870.linklayer;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace lib60870
 {
@@ -41,11 +42,7 @@ namespace lib60870
 
             private void DebugLog(string msg)
             {
-                if (debugOutput)
-                {
-                    Console.Write("CS101 SLAVE: ");
-                    Console.WriteLine(msg);
-                }
+                logger.LogInformation("CS101 SLAVE: " + msg);
             }
 				
             /********************************************
