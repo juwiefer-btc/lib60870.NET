@@ -1,7 +1,7 @@
 /*
  *  Connection.cs
  *
- *  Copyright 2016-2019 MZ Automation GmbH
+ *  Copyright 2016-2022 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -622,7 +622,6 @@ namespace lib60870.CS104
                 {
                     oldestSentASDU = 0;
                     newestSentASDU = 0;
-
                 }
                 else
                 {
@@ -1713,7 +1712,6 @@ namespace lib60870.CS104
             return localCertificates[0];
         }
 
-
         private void HandleConnection()
         {
             byte[] bytes = new byte[300];
@@ -1973,7 +1971,6 @@ namespace lib60870.CS104
             {
                 DebugLog(e.ToString());
             }
-
 
             running = false;
             connecting = false;

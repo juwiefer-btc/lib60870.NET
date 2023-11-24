@@ -1,7 +1,7 @@
 /*
  *  CP24Time2a.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2022 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -38,22 +38,39 @@ namespace lib60870
                 encodedValue[i] = msg[startIndex + i];
         }
 
+        public CP24Time2a(int minute, int second, int millisecond)
+        {
+            Millisecond = millisecond;
+            Second = second;
+            Minute = minute;
+        }
+
         public CP24Time2a()
         {
             for (int i = 0; i < 3; i++)
                 encodedValue[i] = 0;
         }
+
         public CP24Time2a(CP24Time2a original)
         {
             for (int i = 0; i < 3; i++)
                 encodedValue[i] = original.encodedValue[i];
         }
 
-        public CP24Time2a(int minute, int second, int millisecond)
+        public override bool Equals(object obj)
         {
-            Millisecond = millisecond;
-            Second = second;
-            Minute = minute;
+            if (obj == null)
+                return false;
+
+            if (!(obj is CP24Time2a))
+                return false;
+
+            return (this.GetHashCode() == obj.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            return new System.Numerics.BigInteger(encodedValue).GetHashCode();
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016-2019 MZ Automation GmbH
+ *  Copyright 2016-2022 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -738,7 +738,6 @@ namespace lib60870.CS104
             }
         }
 
-
         private void ServerAcceptThread()
         {
             running = true;
@@ -959,6 +958,15 @@ namespace lib60870.CS104
         }
 
         /// <summary>
+        /// Check if the server is running (listening to client connections and handling connections) or not
+        /// </summary>
+        /// <returns>true when the server is running, false otherwise</returns>
+        public bool IsRunning()
+        {
+            return running;
+        }
+
+        /// <summary>
         /// Enqueues the ASDU to the transmission queue.
         /// </summary>
         /// If an active connection exists the ASDU will be sent to the active client immediately. Otherwhise
@@ -992,7 +1000,6 @@ namespace lib60870.CS104
             if (connectionEventHandler != null)
                 connectionEventHandler(connectionEventHandlerParameter, connection, e);
         }
-
 
         internal void Activated(ClientConnection activeConnection)
         {

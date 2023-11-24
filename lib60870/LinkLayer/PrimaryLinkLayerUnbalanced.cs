@@ -1,24 +1,23 @@
 ﻿/*
-  *  Copyright 2016, 2017 MZ Automation GmbH
-  *
-  *  This file is part of lib60870.NET
-  *
-  *  lib60870.NET is free software: you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-  *  the Free Software Foundation, either version 3 of the License, or
-  *  (at your option) any later version.
-  *
-  *  lib60870.NET is distributed in the hope that it will be useful,
-  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  *  GNU General Public License for more details.
-  *
-  *  You should have received a copy of the GNU General Public License
-  *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
-  *
-  *  See COPYING file for the complete license text.
-  */
-
+ *  Copyright 2016-2022 Michael Zillgith
+ *
+ *  This file is part of lib60870.NET
+ *
+ *  lib60870.NET is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  lib60870.NET is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  See COPYING file for the complete license text.
+ */
 
 using System;
 using System.Collections.Generic;
@@ -36,13 +35,9 @@ namespace lib60870.linklayer
         /// <param name="slaveAddress">link layer address of the slave</param>
         bool IsChannelAvailable(int slaveAddress);
 
-
         void RequestClass1Data(int slaveAddress);
 
-
-
         void RequestClass2Data(int slaveAddress);
-
 
         void SendConfirmed(int slaveAddress, BufferFrame message);
 
@@ -54,8 +49,6 @@ namespace lib60870.linklayer
     {
         private LinkLayer linkLayer;
         private Action<string> DebugLog;
-
-        //	private bool waitingForResponse = false;
 
         private List<SlaveConnection> slaveConnections;
 
@@ -338,15 +331,30 @@ namespace lib60870.linklayer
 
                 long currentTime = SystemUtils.currentTimeMillis();
 
+                if (lastSendTime > currentTime)
+                    currentTime = lastSendTime;
+
                 switch (primaryState)
                 {
 
+                    case PrimaryLinkLayerState.TIMEOUT:
+
+                        if (currentTime > (lastSendTime + linkLayer.linkLayerParameters.TimeoutLinkState)) {
+                            newState = PrimaryLinkLayerState.IDLE;
+                        }
+
+                        break;
+
                     case PrimaryLinkLayerState.IDLE:
 
-                        waitingForResponse = false;
                         originalSendTime = 0;
-                        lastSendTime = 0;
                         sendLinkLayerTestFunction = false;
+
+                        linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
+
+                        lastSendTime = currentTime;
+                        waitingForResponse = true;
+
                         newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
 
                         break;
@@ -358,9 +366,10 @@ namespace lib60870.linklayer
 						
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
-                                linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
+                                waitingForResponse = false;
+                                lastSendTime = currentTime;
 
-                                lastSendTime = SystemUtils.currentTimeMillis();
+                                newState = PrimaryLinkLayerState.TIMEOUT;
                             }
 
                         }
