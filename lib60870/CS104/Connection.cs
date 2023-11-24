@@ -33,6 +33,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 
 using lib60870.CS101;
+using System.Net.Http;
 
 namespace lib60870.CS104
 {
@@ -1732,6 +1733,8 @@ namespace lib60870.CS104
                         if (tlsSecInfo != null)
                         {
                             DebugLog("Setup TLS");
+
+                            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
                             RemoteCertificateValidationCallback validationCallback = CertificateValidationCallback;
 
