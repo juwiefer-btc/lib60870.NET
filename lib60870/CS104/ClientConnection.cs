@@ -1239,10 +1239,17 @@ namespace lib60870.CS104
                         SslStream sslStream = new SslStream(socketStream, true, validationCallback);
 
                         bool authenticationSuccess = false;
-
+                       
                         try
                         {
-                            sslStream.AuthenticateAsServer(tlsSecInfo.OwnCertificate, true, System.Security.Authentication.SslProtocols.Tls12, false);
+                            System.Security.Authentication.SslProtocols tlsVersion = System.Security.Authentication.SslProtocols.None;
+
+                            if (tlsSecInfo != null)
+                                tlsVersion = tlsSecInfo.TlsVersion;
+
+                            DebugLog("Using TLS version: " + tlsVersion.ToString());
+
+                            sslStream.AuthenticateAsServer(tlsSecInfo.OwnCertificate, true, tlsVersion, false);
 						
                             if (sslStream.IsAuthenticated == true)
                             {

@@ -126,8 +126,10 @@ namespace cs104_tls_client
                 Console.WriteLine("Using hostname: " + hostname);
             }
 
+            
 
-			Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
+
+            Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
 
 			// Own certificate has to be a pfx file that contains the private key
 			X509Certificate2 ownCertificate = new X509Certificate2 ("client1.pfx");
@@ -141,18 +143,24 @@ namespace cs104_tls_client
 			// Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
 			secInfo.AddCA (new X509Certificate2 ("root.cer"));
 
-			// Check if the certificate is signed by a provided CA
-			secInfo.ChainValidation = true;
+            SslProtocols tlsVersion = SslProtocols.Tls12;
+
+            // Check if the certificate is signed by a provided CA
+            secInfo.ChainValidation = true;
+
+			secInfo.TlsVersion = tlsVersion;
 
 			// Check that the shown server certificate is in the list of allowed certificates
 			secInfo.AllowOnlySpecificCertificates = true;
 
-			Connection con = new Connection (hostname);
-
-			// Set security information object, this will force the connection using TLS (using TCP port 19998)
-			con.SetTlsSecurity (secInfo);
+			Connection con = new Connection (hostname); 
+            con.LocalIpAddress = "127.0.0.1"; 
+            con.LocalTcpPort = 2404; 
+            // Set security information object, this will force the connection using TLS (using TCP port 19998)
+            con.SetTlsSecurity (secInfo);
 
 			con.DebugOutput = true;
+			
 
 			con.SetASDUReceivedHandler (asduReceivedHandler, null);
 			con.SetConnectionHandler (ConnectionHandler, null);
@@ -178,7 +186,8 @@ namespace cs104_tls_client
 
 			/* Synchronize clock of the controlled station */
 			con.SendClockSyncCommand (1 /* CA */, new CP56Time2a (DateTime.Now)); 
-
+  
+			
 			Console.WriteLine ("CLOSE");
 
 			con.Close ();

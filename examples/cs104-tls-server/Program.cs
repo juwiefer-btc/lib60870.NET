@@ -125,14 +125,17 @@ namespace cs104_tls_server
 			secInfo.AddAllowedCertificate (new X509Certificate2 ("client1.cer"));
 			secInfo.AddAllowedCertificate (new X509Certificate2 ("client2.cer"));
 
-			// Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
-			secInfo.AddCA (new X509Certificate2 ("root.cer"));
+            SslProtocols tlsVersion = SslProtocols.Tls11;
+            // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
+            secInfo.AddCA (new X509Certificate2 ("root.cer"));
 
 			// Check if the certificate is signed by a provided CA
 			secInfo.ChainValidation = true;
 
-			// Check that the shown client certificate is in the list of allowed certificates
-			secInfo.AllowOnlySpecificCertificates = true;
+            secInfo.TlsVersion = tlsVersion;
+
+            // Check that the shown client certificate is in the list of allowed certificates
+            secInfo.AllowOnlySpecificCertificates = true;
 
 			// Use constructor with security information object, this will force the connection using TLS (using TCP port 19998)
 			Server server = new Server (secInfo);
