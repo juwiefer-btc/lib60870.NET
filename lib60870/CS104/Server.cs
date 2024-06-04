@@ -18,9 +18,8 @@
  *
  *  See COPYING file for the complete license text.
  */
-
+#define CONFIG_USE_SEMAPHORES
 using System;
-
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -28,21 +27,25 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 
 using lib60870.CS101;
+using System.Runtime.InteropServices;
+using System.Collections;
 
 namespace lib60870.CS104
 {
-	
+
     /// <summary>
     /// Connection request handler is called when a client tries to connect to the server.
     /// </summary>
     /// <param name="parameter">User provided parameter</param>
     /// <param name="ipAddress">IP address of the connecting client</param>
     /// <returns>true if the connection has to be accepted, false otherwise</returns>
-	public delegate bool ConnectionRequestHandler(object parameter,IPAddress ipAddress);
+    public delegate bool ConnectionRequestHandler(object parameter,IPAddress ipAddress);
 
     /// <summary>
     /// Connection events for the Server
     /// </summary>
+    /// 
+
     public enum ClientConnectionEvent
     {
         /// <summary>
@@ -65,6 +68,7 @@ namespace lib60870.CS104
         /// </summary>
         CLOSED
     }
+
 
     public delegate void ConnectionEventHandler(object parameter,ClientConnection connection,ClientConnectionEvent eventType);
 
@@ -114,6 +118,7 @@ namespace lib60870.CS104
 
     internal class ASDUQueue
     {
+
         private enum QueueEntryState
         {
             NOT_USED,
@@ -134,7 +139,9 @@ namespace lib60870.CS104
         private int latestQueueEntry = -1;
         private int numberOfAsduInQueue = 0;
         private int maxQueueSize;
-
+        private int entryCounter;
+        private SemaphoreSlim queueLock;
+        internal ASDUQueue asduQueue = null;
         private EnqueueMode enqueueMode;
 
         private ApplicationLayerParameters parameters;
@@ -159,6 +166,8 @@ namespace lib60870.CS104
             this.parameters = parameters;
             this.DebugLog = DebugLog;
         }
+
+
 
         public void EnqueueAsdu(ASDU asdu)
         {
@@ -347,7 +356,54 @@ namespace lib60870.CS104
                     }
                 }
             }
+
         }
+
+        public int GetEntryCount(ASDUQueue queue)
+        {
+            int count = 0;
+        #if CONFIG_USE_SEMAPHORES
+            queueLock.Wait();
+        #endif
+
+            try
+            {
+                count = entryCounter;
+            }
+
+            finally
+            {
+        #if CONFIG_USE_SEMAPHORES
+                queueLock.Release();
+        #endif
+
+            }
+            return count;
+        }
+
+        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup)
+        {
+    #if SINGLE_REDUNDANCY_GROUP
+            if (ServerMode.SINGLE_REDUNDANCY_GROUP.Equals(redundancyGroup))
+            {
+                return GetEntryCount(asduQueue);
+            }
+    #endif
+
+    #if MULTIPLE_REDUNDANCY_GROUPS
+            if (ServerMode.MULTIPLE_REDUNDANCY_GROUPS.Equals(redundancyGroup))
+            {
+                return GetEntryCount(asduQueue);
+
+            }
+
+            Console.WriteLine("CS104_SLAVE: redundancy group not found\\n\"");
+    #endif
+
+            return 0;
+        }
+
+
     }
 
     /// <summary>
@@ -370,6 +426,7 @@ namespace lib60870.CS104
         public RedundancyGroup()
         {
         }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="lib60870.CS104.RedundancyGroup"/> class.
@@ -433,6 +490,7 @@ namespace lib60870.CS104
         {
             connections.Add(connection);
         }
+
 
         internal void RemoveConnection(ClientConnection connection)
         {
