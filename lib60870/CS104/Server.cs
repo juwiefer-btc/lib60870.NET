@@ -116,7 +116,7 @@ namespace lib60870.CS104
         THROW_EXCEPTION
     }
 
-    internal class ASDUQueue
+    public class ASDUQueue
     {
 
         private enum QueueEntryState
@@ -139,9 +139,8 @@ namespace lib60870.CS104
         private int latestQueueEntry = -1;
         private int numberOfAsduInQueue = 0;
         private int maxQueueSize;
-        private int entryCounter;
-        private SemaphoreSlim queueLock;
-        internal ASDUQueue asduQueue = null;
+        public int entryCounter;
+
         private EnqueueMode enqueueMode;
 
         private ApplicationLayerParameters parameters;
@@ -237,7 +236,7 @@ namespace lib60870.CS104
             Monitor.Exit(enqueuedASDUs);
         }
 
-        public BufferFrame GetNextWaitingASDU(out long timestamp, out int index)
+        internal BufferFrame GetNextWaitingASDU(out long timestamp, out int index)
         {
             timestamp = 0;
             index = -1;
@@ -357,50 +356,6 @@ namespace lib60870.CS104
                 }
             }
 
-        }
-
-        public int GetEntryCount(ASDUQueue queue)
-        {
-            int count = 0;
-        #if CONFIG_USE_SEMAPHORES
-            queueLock.Wait();
-        #endif
-
-            try
-            {
-                count = entryCounter;
-            }
-
-            finally
-            {
-        #if CONFIG_USE_SEMAPHORES
-                queueLock.Release();
-        #endif
-
-            }
-            return count;
-        }
-
-        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup)
-        {
-    #if SINGLE_REDUNDANCY_GROUP
-            if (ServerMode.SINGLE_REDUNDANCY_GROUP.Equals(redundancyGroup))
-            {
-                return GetEntryCount(asduQueue);
-            }
-    #endif
-
-    #if MULTIPLE_REDUNDANCY_GROUPS
-            if (ServerMode.MULTIPLE_REDUNDANCY_GROUPS.Equals(redundancyGroup))
-            {
-                return GetEntryCount(asduQueue);
-
-            }
-
-            Console.WriteLine("CS104_SLAVE: redundancy group not found\\n\"");
-    #endif
-
-            return 0;
         }
 
 
@@ -581,6 +536,11 @@ namespace lib60870.CS104
         private int maxQueueSize = 1000;
         private int maxOpenConnections = 10;
 
+        private static readonly SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
+        internal ASDUQueue asduQueue = null;
+        private int entryCounter = 0;
+
+
         internal int? fileTimeout = null;
 
         private int receiveTimeoutInMs = 1000; /* maximum allowed time between SOF byte and last message byte */
@@ -598,6 +558,8 @@ namespace lib60870.CS104
             get { return serverMode; }
             set { serverMode = value; }
         }
+
+
 
         private EnqueueMode enqueueMode = EnqueueMode.REMOVE_OLDEST;
 
@@ -794,6 +756,47 @@ namespace lib60870.CS104
             {
                 this.receiveTimeoutInMs = value;
             }
+        }
+
+        public int GetEntryCount(ASDUQueue queue)
+        {
+            int count = 0;
+            queueLock.Wait();
+
+            try
+            {
+                count = entryCounter;
+            }
+
+            finally
+            {
+                queueLock.Release();
+            }
+            return count;
+        }
+
+        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup)
+        {
+            if (serverMode == ServerMode.SINGLE_REDUNDANCY_GROUP)
+            {
+                return GetEntryCount(asduQueue);
+            }
+
+            if (serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
+            {
+                if (redundancyGroup != null)
+                {
+                    return GetEntryCount(redundancyGroup.asduQueue);
+                }
+
+
+                Console.WriteLine("CS104_SLAVE: redundancy group not found\\n\"");
+
+            }
+
+
+
+            return 0;
         }
 
         private void ServerAcceptThread()
@@ -1041,6 +1044,7 @@ namespace lib60870.CS104
                     if (connection.IsActive)
                     {
                         connection.GetASDUQueue().EnqueueAsdu(asdu);
+                        entryCounter++;
                     }
                 }
             }
@@ -1049,6 +1053,7 @@ namespace lib60870.CS104
                 foreach (RedundancyGroup redGroup in redGroups)
                 {
                     redGroup.EnqueueASDU(asdu);
+                    entryCounter++;
                 }
             }
         }
