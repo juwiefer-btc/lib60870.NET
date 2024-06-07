@@ -67,10 +67,8 @@ namespace cs104_server4
 
                     server.EnqueueASDU(newAsdu);
 
-                    RedundancyGroup redundancyGroup = new RedundancyGroup();
-                    int count = server.GetNumberOfQueueEntries(redundancyGroup);
+                    int count = server.GetNumberOfQueueEntries(null);
                     Console.WriteLine($"Number of queue entries: {count}");
-
                     waitTime = 1000;
                 }
             }
