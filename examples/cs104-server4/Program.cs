@@ -40,13 +40,22 @@ namespace cs104_server4
 
             server.DebugOutput = true;
 
+            server.ServerMode = ServerMode.MULTIPLE_REDUNDANCY_GROUPS;
             server.MaxQueueSize = 10;
+            server.MaxOpenConnections = 6;
+
+            RedundancyGroup redGroup1 = new RedundancyGroup("red-group-1");
+            redGroup1.AddAllowedClient("127.0.0.1");
+
+            server.AddRedundancyGroup(redGroup1);
+
             server.EnqueueMode = EnqueueMode.REMOVE_OLDEST;
 
             server.Start();
 
             ASDU newAsdu = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.INITIALIZED, false, false, 0, 1, false);
             EndOfInitialization eoi = new EndOfInitialization(0);
+
             newAsdu.AddInformationObject(eoi);
             server.EnqueueASDU(newAsdu);
 
@@ -67,7 +76,7 @@ namespace cs104_server4
 
                     server.EnqueueASDU(newAsdu);
 
-                    int count = server.GetNumberOfQueueEntries(null);
+                    int count = server.GetNumberOfQueueEntries(redGroup1);
                     Console.WriteLine($"Number of queue entries: {count}");
                     waitTime = 1000;
                 }

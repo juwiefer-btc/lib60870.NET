@@ -117,7 +117,7 @@ namespace lib60870.CS104
         THROW_EXCEPTION
     }
 
-    public class ASDUQueue
+    internal class ASDUQueue
     {
 
         private enum QueueEntryState
@@ -385,11 +385,6 @@ namespace lib60870.CS104
 
         public RedundancyGroup()
         {
-        }
-
-        public RedundancyGroup(ASDUQueue queue)
-        {
-            this.asduQueue = queue;
         }
 
 
@@ -771,7 +766,7 @@ namespace lib60870.CS104
             }
         }
 
-        public int GetEntryCount(ASDUQueue queue)
+        private int GetEntryCount(ASDUQueue queue)
         {
             int count = 0;
             if (queue != null)
@@ -805,7 +800,7 @@ namespace lib60870.CS104
                     return GetEntryCount(redundancyGroup.asduQueue);
                 }
 
-                Console.WriteLine("CS104_SLAVE: redundancy group not found\\n\"");
+                DebugLog("CS104_SLAVE: redundancy group not found\\n\"");
 
             }
 
@@ -1051,8 +1046,8 @@ namespace lib60870.CS104
         /// <exception cref="lib60870.CS101.ASDUQueueException">when the ASDU queue is full and mode is EnqueueMode.THROW_EXCEPTION.</exception>
         public void EnqueueASDU(ASDU asdu)
         {
-            ASDUQueue queue = new ASDUQueue(MaxQueueSize, enqueueMode, alParameters, DebugLog);
-            this.asduQueue = queue;
+            /*ASDUQueue queue = new ASDUQueue(MaxQueueSize, enqueueMode, alParameters, DebugLog);
+            this.asduQueue = queue;*/
 
             if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
@@ -1061,7 +1056,6 @@ namespace lib60870.CS104
                     if (connection.IsActive)
                     {
                         connection.GetASDUQueue().EnqueueAsdu(asdu);
-                        queue.NumberOfAsduInQueue++;
                     }
                 }
             }
@@ -1070,7 +1064,6 @@ namespace lib60870.CS104
                 foreach (RedundancyGroup redGroup in redGroups)
                 {
                     redGroup.EnqueueASDU(asdu);
-                    queue.NumberOfAsduInQueue++;
                 }
             }
         }
