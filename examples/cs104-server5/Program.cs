@@ -8,7 +8,7 @@ using lib60870.CS101;
 using lib60870.CS104;
 
 
-namespace cs104_server4
+namespace cs104_server5
 {
     class MainProgram
     {
@@ -40,14 +40,9 @@ namespace cs104_server4
 
             server.DebugOutput = true;
 
-            server.ServerMode = ServerMode.MULTIPLE_REDUNDANCY_GROUPS;
+            server.ServerMode = ServerMode.CONNECTION_IS_REDUNDANCY_GROUP;
             server.MaxQueueSize = 10;
             server.MaxOpenConnections = 6;
-
-            RedundancyGroup redGroup = new RedundancyGroup("red-group");
-            redGroup.AddAllowedClient("127.0.0.1");
-
-            server.AddRedundancyGroup(redGroup);
 
             server.EnqueueMode = EnqueueMode.REMOVE_OLDEST;
 
@@ -76,7 +71,7 @@ namespace cs104_server4
 
                     server.EnqueueASDU(newAsdu);
 
-                    int count = server.GetNumberOfQueueEntries(redGroup);
+                    int count = server.GetNumberOfQueueEntries(null);
                     Console.WriteLine($"Number of queue entries: {count}");
                     waitTime = 1000;
                 }

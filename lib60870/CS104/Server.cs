@@ -788,12 +788,19 @@ namespace lib60870.CS104
 
         public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup)
         {
-            if (serverMode == ServerMode.SINGLE_REDUNDANCY_GROUP)
+            if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
-                return GetEntryCount(asduQueue);
+                foreach (ClientConnection connection in allOpenConnections)
+                {
+                    if (connection.IsActive)
+                    {
+                        return GetEntryCount(connection.GetASDUQueue());
+                        
+                    }
+                }
             }
 
-            else if (serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
+            else
             {
                 if (redundancyGroup != null)
                 {
