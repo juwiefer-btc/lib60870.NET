@@ -30,6 +30,7 @@ using lib60870.CS101;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Security.Cryptography;
+using System.Collections.ObjectModel;
 
 namespace lib60870.CS104
 {
@@ -139,6 +140,7 @@ namespace lib60870.CS104
         private int oldestQueueEntry = -1;
         private int latestQueueEntry = -1;
         private int numberOfAsduInQueue = 0;
+        public SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
         private int maxQueueSize;
 
         private EnqueueMode enqueueMode;
@@ -225,10 +227,12 @@ namespace lib60870.CS104
                     }
 
                 }
+
             }
 
 
             DebugLog("Queue contains " + NumberOfAsduInQueue + " messages (oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry + ")");
+          
         }
 
         public void LockASDUQueue()
@@ -542,9 +546,6 @@ namespace lib60870.CS104
         private int maxOpenConnections = 10;
 
         private static readonly SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
-        internal ASDUQueue asduQueue = null;
-        private int entryCounter = 0;
-
 
         internal int? fileTimeout = null;
 
@@ -774,7 +775,7 @@ namespace lib60870.CS104
                 try
                 {
                     queueLock.Wait();
-                    count = queue.NumberOfAsduInQueue;
+                    count = queue.NumberOfAsduInQueue;                  
                     queueLock.Release();
                 }
                 catch (Exception ex)
@@ -786,7 +787,7 @@ namespace lib60870.CS104
             return count;
         }
 
-        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup)
+        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup  = null)
         {
             if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
@@ -800,16 +801,25 @@ namespace lib60870.CS104
                 }
             }
 
-            else
+            else if (serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
             {
                 if (redundancyGroup != null)
                 {
                     return GetEntryCount(redundancyGroup.asduQueue);
                 }
 
-                DebugLog("CS104_SLAVE: redundancy group not found\\n\"");
-
+                else
+                {
+                    return -1;
+                }
             }
+
+            else
+            {
+                RedundancyGroup singleGroup = redGroups[0];
+                return GetEntryCount(singleGroup.asduQueue);
+            }
+
 
             return 0;
         }
