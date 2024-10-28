@@ -1516,9 +1516,6 @@ namespace lib60870.CS104
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             LingerOption lingerOption = new LingerOption(true, 0);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
-            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, false);
-            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 0);
-            //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 0);
 
             if (LocalIpAddress != null)
             {
@@ -1734,7 +1731,7 @@ namespace lib60870.CS104
                         {
                             DebugLog("Setup TLS");
 
-                            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+                            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | (SecurityProtocolType)12288 /* TLS 1.3 */;
 
                             RemoteCertificateValidationCallback validationCallback = CertificateValidationCallback;
 

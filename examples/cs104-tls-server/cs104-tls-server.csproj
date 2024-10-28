@@ -1,6 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Include="..\tls-certs\new\client_CA1_1.pem" Link="client_CA1_1.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\tls-certs\new\client_CA1_2.pem" Link="client_CA1_2.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\tls-certs\new\root_CA1.pem" Link="root_CA1.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\tls-certs\new\server_CA1_1.pfx" Link="server_CA1_1.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Page Include="..\tls-certs\new\server_CA1_1.pem" Link="server_CA1_1.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\lib60870\lib60870.csproj" />
   </ItemGroup>
 
@@ -11,24 +27,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\tls-certs\makecert\client1.cer">
-      <Link>client1.cer</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\tls-certs\makecert\client2.cer">
-      <Link>client2.cer</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\tls-certs\makecert\root.cer">
-      <Link>root.cer</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\tls-certs\makecert\server.pfx">
-      <Link>server.pfx</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>

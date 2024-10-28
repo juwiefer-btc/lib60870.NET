@@ -126,42 +126,35 @@ namespace cs104_tls_client
                 Console.WriteLine("Using hostname: " + hostname);
             }
 
-            
-
-
             Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
 
 			// Own certificate has to be a pfx file that contains the private key
-			X509Certificate2 ownCertificate = new X509Certificate2 ("client1.pfx");
+			X509Certificate2 ownCertificate = new X509Certificate2 ("client_CA1_1.pfx");
 
 			// Create a new security information object to configure TLS
 			TlsSecurityInformation secInfo = new TlsSecurityInformation (null, ownCertificate);
 
 			// Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
-			secInfo.AddAllowedCertificate (new X509Certificate2 ("server.cer"));
+			secInfo.AddAllowedCertificate (new X509Certificate2 ("server_CA1_1.pem"));
 
 			// Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
-			secInfo.AddCA (new X509Certificate2 ("root.cer"));
+			secInfo.AddCA (new X509Certificate2 ("root_CA1.pem"));
 
-            SslProtocols tlsVersion = SslProtocols.Tls12;
+			// Check if the certificate is signed by a provided CA
+			secInfo.ChainValidation = false;
 
-            // Check if the certificate is signed by a provided CA
-            secInfo.ChainValidation = true;
-
-			secInfo.TlsVersion = tlsVersion;
+			secInfo.TlsVersion = SslProtocols.Tls12 | SslProtocols.Tls13;
 
 			// Check that the shown server certificate is in the list of allowed certificates
 			secInfo.AllowOnlySpecificCertificates = true;
 
-			Connection con = new Connection (hostname); 
-            con.LocalIpAddress = "127.0.0.1"; 
-            con.LocalTcpPort = 2404; 
+			Connection con = new Connection (hostname, 19998);
+
             // Set security information object, this will force the connection using TLS (using TCP port 19998)
             con.SetTlsSecurity (secInfo);
 
 			con.DebugOutput = true;
 			
-
 			con.SetASDUReceivedHandler (asduReceivedHandler, null);
 			con.SetConnectionHandler (ConnectionHandler, null);
 
@@ -186,8 +179,7 @@ namespace cs104_tls_client
 
 			/* Synchronize clock of the controlled station */
 			con.SendClockSyncCommand (1 /* CA */, new CP56Time2a (DateTime.Now)); 
-  
-			
+
 			Console.WriteLine ("CLOSE");
 
 			con.Close ();

@@ -142,10 +142,10 @@ namespace cs104_client1
 		{
 			Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
 
-			Connection con = new Connection ("192.168.2.222");
+			Connection con = new Connection ("127.0.0.1");
 
-			con.LocalIpAddress = "192.168.2.244";
-			con.LocalTcpPort = 22222;
+			//con.LocalIpAddress = "192.168.2.244";
+			//con.LocalTcpPort = 22222;
 
 			con.DebugOutput = false;
 
