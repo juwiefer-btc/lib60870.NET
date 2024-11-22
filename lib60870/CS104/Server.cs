@@ -164,7 +164,6 @@ namespace lib60870.CS104
         {
             lock (enqueuedASDUs)
             {
-
                 if (oldestQueueEntry == -1)
                 {
                     oldestQueueEntry = 0;
@@ -238,12 +237,10 @@ namespace lib60870.CS104
 
             if (numberOfAsduInQueue > 0)
             {
-
                 int currentIndex = oldestQueueEntry;
 
                 while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
                 {
-
                     if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
                         break;
 
@@ -293,21 +290,16 @@ namespace lib60870.CS104
 
             lock (enqueuedASDUs)
             {
-
                 if (numberOfAsduInQueue > 0)
                 {
-
                     if (enqueuedASDUs[index].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
                     {
-
                         if (enqueuedASDUs[index].entryTimestamp == timestamp)
                         {
-
                             int currentIndex = index;
 
                             while (enqueuedASDUs[currentIndex].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
                             {
-
                                 DebugLog("Remove from queue with index " + currentIndex);
 
                                 enqueuedASDUs[currentIndex].state = QueueEntryState.NOT_USED;

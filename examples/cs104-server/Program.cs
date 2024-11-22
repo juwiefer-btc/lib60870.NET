@@ -1,18 +1,13 @@
 // This example shows how to send periodic messages and handle commands from clients
 
-using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-
 using lib60870;
 using lib60870.CS101;
 using lib60870.CS104;
 
 namespace cs104_server
 {
-	
-	class MainClass
+
+    class MainClass
 	{
 		private static bool interrogationHandler(object parameter, IMasterConnection connection, ASDU asdu, byte qoi)
 		{
@@ -83,8 +78,10 @@ namespace cs104_server
 
 		private static bool asduHandler(object parameter, IMasterConnection connection, ASDU asdu)
 		{
-			
-			if (asdu.TypeId == TypeID.C_SC_NA_1) {
+			Console.WriteLine("ASDU received:" + asdu.ToString());
+
+			if (asdu.TypeId == TypeID.C_SC_NA_1)
+			{
 				Console.WriteLine ("Single command");
 
 				SingleCommand sc = (SingleCommand)asdu.GetElement (0);
@@ -102,7 +99,8 @@ namespace cs104_server
 
                 connection.SendACT_CON(asdu, false);
 			} 
-			else if (asdu.TypeId == TypeID.C_CS_NA_1){
+			else if (asdu.TypeId == TypeID.C_CS_NA_1)
+			{
 				ClockSynchronizationCommand qsc = (ClockSynchronizationCommand)asdu.GetElement (0);
 
 				Console.WriteLine ("Received clock sync command with time " + qsc.NewTime.ToString());
@@ -157,7 +155,8 @@ namespace cs104_server
 
 			int waitTime = 1000;
 
-			while (running && server.IsRunning()) {
+			while (running && server.IsRunning())
+			{
 				Thread.Sleep(100);
 
 				if (waitTime > 0)
@@ -170,7 +169,7 @@ namespace cs104_server
 				
 					server.EnqueueASDU (newAsdu);
 
-					waitTime = 1000;
+					waitTime = 30000;
 				}
 			}
 
