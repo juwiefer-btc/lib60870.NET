@@ -953,7 +953,6 @@ namespace lib60870.CS104
 
             if ((buffer[2] & 1) == 0)
             {
-
                 if (msgSize < 7)
                 {
                     DebugLog("I msg too small!");
@@ -1015,7 +1014,6 @@ namespace lib60870.CS104
 			// Check for TESTFR_ACT message
 			else if ((buffer[2] & 0x43) == 0x43)
             {
-
                 DebugLog("Send TESTFR_CON");
 
                 socketStream.Write(TESTFR_CON_MSG, 0, TESTFR_CON_MSG.Length);
@@ -1024,7 +1022,6 @@ namespace lib60870.CS104
 			// Check for STARTDT_ACT message
 			else if ((buffer[2] & 0x07) == 0x07)
             {
-
                 DebugLog("Send STARTDT_CON");
 
                 if (this.isActive == false)
@@ -1040,7 +1037,14 @@ namespace lib60870.CS104
 			// Check for STOPDT_ACT message
 			else if ((buffer[2] & 0x13) == 0x13)
             {
-				
+                if (unconfirmedReceivedIMessages > 0)
+                {
+                    lastConfirmationTime = currentTime;
+                    unconfirmedReceivedIMessages = 0;
+                    timeoutT2Triggered = false;
+                    SendSMessage();
+                }
+
                 DebugLog("Send STOPDT_CON");
 
                 if (this.isActive == true)
@@ -1080,7 +1084,6 @@ namespace lib60870.CS104
 
                 if (CheckSequenceNumber(seqNo) == false)
                     return false;
-					
             }
             else
             {
