@@ -190,7 +190,6 @@ namespace lib60870.CS101
         /// <param name="handler">Handler/delegate that will be invoked when a message is sent<</param>
         /// <param name="parameter">will be passed to the delegate</param>
         public abstract void SetSentRawMessageHandler(RawMessageHandler handler, object parameter);
-
     }
 		
 }

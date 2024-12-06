@@ -1,7 +1,7 @@
 ﻿/*
  *  CS101Slave.cs
  *
- *  Copyright 2016-2022 Michael Zillgith
+ *  Copyright 2016-2024 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -407,10 +407,8 @@ namespace lib60870
                 EnqueueUserDataClass1(asdu);
             }
 
-
             private bool HandleApplicationLayer(int address, byte[] msg, int userDataStart, int userDataLength)
             {
-
                 ASDU asdu;
 
                 try
@@ -427,7 +425,6 @@ namespace lib60870
 
                 switch (asdu.TypeId)
                 {
-
                     case TypeID.C_IC_NA_1: /* 100 - interrogation command */
 
                         DebugLog("Rcvd interrogation command C_IC_NA_1");
@@ -717,7 +714,25 @@ namespace lib60870
                 }
             }
 
-        }
+            /// <summary>
+            /// Sets the raw message handler for received messages
+            /// </summary>
+            /// <param name="handler">Handler/delegate that will be invoked when a message is received</param>
+            /// <param name="parameter">will be passed to the delegate</param>
+            public void SetReceivedRawMessageHandler(RawMessageHandler handler, object parameter)
+            {
+                linkLayer.SetReceivedRawMessageHandler(handler, parameter);
+            }
 
+            /// <summary>
+            /// Sets the sent message handler for sent messages.
+            /// </summary>
+            /// <param name="handler">Handler/delegate that will be invoked when a message is sent<</param>
+            /// <param name="parameter">will be passed to the delegate</param>
+            public void SetSentRawMessageHandler(RawMessageHandler handler, object parameter)
+            {
+                linkLayer.SetSentRawMessageHandler(handler, parameter);
+            }
+        }
     }
 }

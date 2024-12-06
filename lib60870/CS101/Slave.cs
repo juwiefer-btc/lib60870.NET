@@ -1,5 +1,5 @@
 ﻿/*
- *  Copyright 2016-2022 Michael Zillgith
+ *  Copyright 2016-2024 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -19,7 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-
 using System;
 
 namespace lib60870.CS101
@@ -31,7 +30,6 @@ namespace lib60870.CS101
         {
         }
 
-
         public ASDUQueueException(string message)
             : base(message)
         {
@@ -40,7 +38,6 @@ namespace lib60870.CS101
         public ASDUQueueException(string message, Exception innerException)
             : base(message, innerException)
         {
-            
         }
     }
 
@@ -94,9 +91,8 @@ namespace lib60870.CS101
     /// </summary>
 	public delegate bool ASDUHandler(object parameter,IMasterConnection connection,ASDU asdu);
 
-    public class Slave
+    public abstract class Slave
     {
-
         protected bool debugOutput;
 
         public bool DebugOutput
@@ -231,6 +227,5 @@ namespace lib60870.CS101
         /// <value>The file service timeout in ms</value>
         public virtual int FileTimeout { get; set; }
     }
-
 }
 
