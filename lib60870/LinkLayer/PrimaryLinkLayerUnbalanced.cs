@@ -336,6 +336,10 @@ namespace lib60870.linklayer
 
                 switch (primaryState)
                 {
+                    //    if (self->lastSendTime > currentTime)
+                    //    {
+                    //        /* last sent time not plausible! */
+                    //        self->lastSendTime = currentTime;
 
                     case PrimaryLinkLayerState.TIMEOUT:
 
@@ -350,6 +354,7 @@ namespace lib60870.linklayer
                         originalSendTime = 0;
                         sendLinkLayerTestFunction = false;
 
+                        DebugLog("[SLAVE " + address + "] PLL - SEND FC 09 - REQUEST LINK STATUS\n");
                         linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
 
                         lastSendTime = currentTime;
@@ -363,7 +368,13 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
-						
+                            //    if (self->lastSendTime > currentTime)
+                            //    {
+                            //        /* last sent time not plausible! */
+                            //        self->lastSendTime = currentTime;
+
+                            //    }
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 waitingForResponse = false;

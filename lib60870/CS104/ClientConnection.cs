@@ -89,6 +89,8 @@ namespace lib60870.CS104
 
         private Server server;
 
+        private bool allowTestCommand = false;
+
         private ConcurrentQueue<ASDU> receivedASDUs = null;
         private Thread callbackThread = null;
         private bool callbackThreadRunning = false;
@@ -655,7 +657,7 @@ namespace lib60870.CS104
 
                 case TypeID.C_IC_NA_1: /* 100 - interrogation command */
 
-                    DebugLog("Rcvd interrogation command C_IC_NA_1");
+                    DebugLog("Rcvd interrogation command C_IC_NA_1\n");
 
                     if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.DEACTIVATION))
                     {
@@ -664,22 +666,35 @@ namespace lib60870.CS104
 
                             InterrogationCommand irc = (InterrogationCommand)asdu.GetElement(0);
 
-                            if (server.interrogationHandler(server.InterrogationHandlerParameter, this, asdu, irc.QOI))
-                                messageHandled = true;
+                            if (irc != null)
+                            {
+                                /* Verify IOA = 0 */
+                                if (irc.ObjectAddress != 0)
+                                {
+                                    DebugLog("CS104 SLAVE: interrogation command has invalid IOA - should be 0\n");
+                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                    messageHandled = true;
+                                }
+                                else
+                                {
+                                    if (server.interrogationHandler(server.InterrogationHandlerParameter, this, asdu, irc.QOI))
+                                        messageHandled = true;
+                                }
+                            }
                         }
                     }
                     else
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
+                        messageHandled = true;
                     }
 
                     break;
 
                 case TypeID.C_CI_NA_1: /* 101 - counter interrogation command */
 
-                    DebugLog("Rcvd counter interrogation command C_CI_NA_1");
+                    DebugLog("Rcvd counter interrogation command C_CI_NA_1\n");
 
                     if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.DEACTIVATION))
                     {
@@ -688,8 +703,21 @@ namespace lib60870.CS104
 
                             CounterInterrogationCommand cic = (CounterInterrogationCommand)asdu.GetElement(0);
 
-                            if (server.counterInterrogationHandler(server.counterInterrogationHandlerParameter, this, asdu, cic.QCC))
-                                messageHandled = true;
+                            if (cic != null)
+                            {
+                                /* Verify IOA = 0 */
+                                if (cic.ObjectAddress != 0)
+                                {
+                                    DebugLog("CS104 SLAVE: counter interrogation command has invalid IOA - should be 0\n");
+                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                    messageHandled = true;
+                                }
+                                else
+                                {
+                                    if (server.interrogationHandler(server.InterrogationHandlerParameter, this, asdu, cic.QCC))
+                                        messageHandled = true;
+                                }
+                            }
                         }
                     }
                     else
@@ -703,7 +731,7 @@ namespace lib60870.CS104
 
                 case TypeID.C_RD_NA_1: /* 102 - read command */
 
-                    DebugLog("Rcvd read command C_RD_NA_1");
+                    DebugLog("Rcvd read command C_RD_NA_1\n");
 
                     if (asdu.Cot == CauseOfTransmission.REQUEST)
                     {
@@ -714,11 +742,12 @@ namespace lib60870.CS104
                         {
                             ReadCommand rc = (ReadCommand)asdu.GetElement(0);
 
-                            if (server.readHandler(server.readHandlerParameter, this, asdu, rc.ObjectAddress))
-                                messageHandled = true;
-
+                            if (rc != null)
+                            {
+                                if (server.readHandler(server.readHandlerParameter, this, asdu, rc.ObjectAddress))
+                                    messageHandled = true;
+                            }                         
                         }
-
                     }
                     else
                     {
@@ -731,7 +760,7 @@ namespace lib60870.CS104
 
                 case TypeID.C_CS_NA_1: /* 103 - Clock synchronization command */
 
-                    DebugLog("Rcvd clock sync command C_CS_NA_1");
+                    DebugLog("Rcvd clock sync command C_CS_NA_1\n");
 
                     if (asdu.Cot == CauseOfTransmission.ACTIVATION)
                     {
@@ -741,9 +770,35 @@ namespace lib60870.CS104
 
                             ClockSynchronizationCommand csc = (ClockSynchronizationCommand)asdu.GetElement(0);
 
-                            if (server.clockSynchronizationHandler(server.clockSynchronizationHandlerParameter,
-                                this, asdu, csc.NewTime))
+                            if (csc != null)
+                            {
+                                /* Verify IOA = 0 */
+                                if (csc.ObjectAddress != 0)
+                                {
+                                    DebugLog("CS104 SLAVE: Clock synchronization command has invalid IOA - should be 0\n");
+                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                }
+                                else
+                                {
+                                    if (server.clockSynchronizationHandler(server.clockSynchronizationHandlerParameter,
+                                        this, asdu, csc.NewTime))
+                                    {
+                                        csc.ObjectAddress = 0;
+                                        asdu.AddInformationObject(csc);
+                                        asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
+                                        this.SendASDUInternal(asdu);
+                                    }
+                                    else
+                                    {
+                                        asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
+                                        asdu.IsNegative = true;
+                                        this.SendASDUInternal(asdu);
+                                    }
+                                    
+                                }
+
                                 messageHandled = true;
+                            }
                         }
 
                     }
@@ -752,31 +807,57 @@ namespace lib60870.CS104
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
                         this.SendASDUInternal(asdu);
+                        messageHandled = true;
                     }
 
                     break;
 
                 case TypeID.C_TS_NA_1: /* 104 - test command */
 
-                    DebugLog("Rcvd test command C_TS_NA_1");
+                    DebugLog("Rcvd test command C_TS_NA_1\n");
 
-                    if (asdu.Cot != CauseOfTransmission.ACTIVATION)
+                    allowTestCommand = true;
+
+                    if (allowTestCommand)
                     {
-                        asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
-                        asdu.IsNegative = true;
+                        if (asdu.Cot == CauseOfTransmission.ACTIVATION)
+                        {
+                            TestCommand tc = (TestCommand)asdu.GetElement(0);
+
+                            /* Verify IOA = 0 */
+                            if (tc.ObjectAddress != 0)
+                            {
+                                DebugLog("CS104 SLAVE: test command has invalid IOA - should be 0\n");
+                                asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                            }
+                            else
+                            {
+                                asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
+                                this.SendASDUInternal(asdu);
+                            }
+
+                            messageHandled = true;
+                        }
+                        else
+                        {
+                            asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
+                            asdu.IsNegative = true;
+                            messageHandled = true;
+                            this.SendASDUInternal(asdu);
+                        }
                     }
                     else
-                        asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
-
-                    this.SendASDUInternal(asdu);
-
-                    messageHandled = true;
-
+                    {
+                        /* this command is not supported/allowed for IEC 104 */
+                        DebugLog("CS104 SLAVE: Rcvd test command C_TS_NA_1 -> not allowed\n");
+                        messageHandled = false;
+                    }
+                    
                     break;
 
                 case TypeID.C_RP_NA_1: /* 105 - Reset process command */
 
-                    DebugLog("Rcvd reset process command C_RP_NA_1");
+                    DebugLog("Rcvd reset process command C_RP_NA_1\n");
 
                     if (asdu.Cot == CauseOfTransmission.ACTIVATION)
                     {
@@ -786,9 +867,21 @@ namespace lib60870.CS104
 
                             ResetProcessCommand rpc = (ResetProcessCommand)asdu.GetElement(0);
 
-                            if (server.resetProcessHandler(server.resetProcessHandlerParameter,
-                                this, asdu, rpc.QRP))
-                                messageHandled = true;
+                            if (rpc != null)
+                            {
+                                /* Verify IOA = 0 */
+                                if (rpc.ObjectAddress != 0)
+                                {
+                                    DebugLog("CS104 SLAVE: reset process command has invalid IOA - should be 0\n");
+                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                    messageHandled = true;
+                                }
+                                else
+                                {
+                                    if (server.interrogationHandler(server.InterrogationHandlerParameter, this, asdu, rpc.QRP))
+                                        messageHandled = true;
+                                }
+                            }
                         }
 
                     }
@@ -796,6 +889,7 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
+                        messageHandled = true;
                         this.SendASDUInternal(asdu);
                     }
 
@@ -804,7 +898,7 @@ namespace lib60870.CS104
 
                 case TypeID.C_CD_NA_1: /* 106 - Delay acquisition command */
 
-                    DebugLog("Rcvd delay acquisition command C_CD_NA_1");
+                    DebugLog("Rcvd delay acquisition command C_CD_NA_1\n");
 
                     if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.SPONTANEOUS))
                     {
@@ -813,17 +907,61 @@ namespace lib60870.CS104
 
                             DelayAcquisitionCommand dac = (DelayAcquisitionCommand)asdu.GetElement(0);
 
-                            if (server.delayAcquisitionHandler(server.delayAcquisitionHandlerParameter,
-                                this, asdu, dac.Delay))
-                                messageHandled = true;
+                            if (dac != null)
+                            {
+                                /* Verify IOA = 0 */
+                                if (dac.ObjectAddress != 0)
+                                {
+                                    DebugLog("CS104 SLAVE: delay acquisition command has invalid IOA - should be 0\n");
+                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                    messageHandled = true;
+                                }
+                                else
+                                {
+                                    if (server.delayAcquisitionHandler(server.delayAcquisitionHandlerParameter,
+                                            this, asdu, dac.Delay))
+                                    messageHandled = true;
+                                }
+                            }
                         }
                     }
                     else
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
+                        messageHandled = true;
                         this.SendASDUInternal(asdu);
                     }
+
+                    break;
+
+                case TypeID.C_TS_TA_1: /* 107 - test command with timestamp */
+
+                    DebugLog("Rcvd test command with CP56Time2a C_TS_TA_1\n");
+
+                    if (asdu.Cot == CauseOfTransmission.ACTIVATION)
+                    {
+                        TestCommandWithCP56Time2a tc = (TestCommandWithCP56Time2a)asdu.GetElement(0);
+
+                        if (tc.ObjectAddress != 0)
+                        {
+                            DebugLog("CS104 SLAVE: test command with CP56Time2a has invalid IOA - should be 0\n");
+                            asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                        }
+                        else
+                        {
+                            asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
+                            asdu.IsNegative = true;
+                        }
+
+                        messageHandled = true;
+                    }
+                    else
+                    {
+                        asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
+                    }
+                    messageHandled = true;
+                    this.SendASDUInternal(asdu);
 
                     break;
             }
