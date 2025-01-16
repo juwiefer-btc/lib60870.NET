@@ -166,7 +166,6 @@ namespace lib60870.linklayer
                     DebugLog("SLL - REQUEST USER DATA CLASS 1");
                     {
                         BufferFrame asdu = applicationLayer.GetClass1Data();
-
                         bool accessDemand = applicationLayer.IsClass1DataAvailable();
 
                         if (asdu != null)

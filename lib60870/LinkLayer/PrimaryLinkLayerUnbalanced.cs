@@ -340,6 +340,20 @@ namespace lib60870.linklayer
 
                 switch (primaryState)
                 {
+                    //case PLL_TIMEOUT:
+                    //    if (self->lastSendTime > currentTime)
+                    //    {
+                    //        /* last sent time not plausible! */
+                    //        self->lastSendTime = currentTime;
+
+                    //    }
+
+                    //    if (currentTime > (self->lastSendTime + self->primaryLink->linkLayer->linkLayerParameters->timeoutLinkState))
+                    //    {
+                    //        newState = PLL_IDLE;
+                    //    }
+
+                    //    break;
 
                     case PrimaryLinkLayerState.IDLE:
 
@@ -347,6 +361,10 @@ namespace lib60870.linklayer
                         originalSendTime = 0;
                         lastSendTime = 0;
                         sendLinkLayerTestFunction = false;
+                        //DEBUG_PRINT("[SLAVE %i] PLL - SEND FC 09 - REQUEST LINK STATUS\n", self->address);
+                        //SendFixedFrame(self->primaryLink->linkLayer, LL_FC_09_REQUEST_LINK_STATUS, self->address, true, false, false, false);
+                        //self->lastSendTime = currentTime;
+                        //self->waitingForResponse = true;
                         newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
 
                         break;
@@ -355,7 +373,13 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
-						
+                            //    if (self->lastSendTime > currentTime)
+                            //    {
+                            //        /* last sent time not plausible! */
+                            //        self->lastSendTime = currentTime;
+
+                            //    }
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);

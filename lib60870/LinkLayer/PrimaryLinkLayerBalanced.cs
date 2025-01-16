@@ -231,12 +231,22 @@ namespace lib60870.linklayer
                     sendLinkLayerTestFunction = false;
                     newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
 
+                    //SendFixedFrame(self->linkLayer, LL_FC_09_REQUEST_LINK_STATUS, self->otherStationAddress, true, self->linkLayer->dir, false, false);
+                    //self->lastSendTime = currentTime;
+                    //self->waitingForResponse = true;
+
                     break;
 
                 case PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK:
 
                     if (waitingForResponse)
                     {
+                        //if (self->lastSendTime > currentTime)
+                        //{
+                        //    /* last sent time not plausible! */
+                        //    self->lastSendTime = currentTime;
+                        //}
+
                         if (SystemUtils.currentTimeMillis() > (lastSendTime + linkLayer.TimeoutForACK))
                         {
                             linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, linkLayerAddressOtherStation, false, false);
