@@ -106,7 +106,7 @@ namespace cs101_master_unbalanced
 				running = false;
 			};
 
-			string portName = "/dev/ttyUSB0";
+			string portName = "COM6";
 
 			if (args.Length > 0)
 				portName = args [0];

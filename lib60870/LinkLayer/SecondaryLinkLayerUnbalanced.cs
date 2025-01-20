@@ -73,7 +73,7 @@ namespace lib60870.linklayer
                     DebugLog("SLL - REQUEST LINK STATUS");
                     {
                         /* check that FCV=0 */
-                        if (!fcv)
+                        if (fcv)
                         {
                             DebugLog("SLL - REQUEST LINK STATUS failed - invalid FCV\n");
                             return;
@@ -88,10 +88,10 @@ namespace lib60870.linklayer
                 case FunctionCodePrimary.RESET_REMOTE_LINK:
                     DebugLog("SLL - RESET REMOTE LINK");
                     {
-                        /* check that FCV=0 */
-                        if ((!fcv) || (!fcb))
+                        /* check that FCB=0 and FCV=0 */
+                        if ((fcv) || (fcb))
                         {
-                            DebugLog("RESET REMOTE LINK failed - invalid FCV/FCB\n");
+                            DebugLog("SLL - RESET REMOTE LINK failed - invalid FCV/FCB\n");
                             return;
                         }
 
@@ -113,7 +113,7 @@ namespace lib60870.linklayer
                         /* used by CS103 */
 
                         /* check that FCV=0 */
-                        if ((!fcv) || (!fcb))
+                        if ((fcv) || (fcb))
                         {
                             DebugLog("SLL - RESET FCB failed - invalid FCV/FCB");
                             return;
@@ -164,6 +164,17 @@ namespace lib60870.linklayer
                 case FunctionCodePrimary.REQUEST_USER_DATA_CLASS_1:
                     DebugLog("SLL - REQUEST USER DATA CLASS 1");
                     {
+                        bool invalidFCB = false;
+
+                        if (fcv)
+                        {
+                            if (CheckFCB(fcb) == false)
+                            {
+                                DebugLog("SLL - REQ UD1 - unexpected FCB\n");
+                                invalidFCB = true;
+                            }
+                        }
+
                         BufferFrame asdu = applicationLayer.GetClass1Data();
                         bool accessDemand = applicationLayer.IsClass1DataAvailable();
 
@@ -212,7 +223,7 @@ namespace lib60870.linklayer
                 case FunctionCodePrimary.USER_DATA_NO_REPLY:
                     DebugLog("SLL - USER DATA NO REPLY");
                     {
-                        if (!fcv)
+                        if (fcv)
                         {
                             DebugLog("SLL - USER DATA NO REPL - invalid FCV");
                             return;
