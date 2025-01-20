@@ -299,8 +299,6 @@ namespace lib60870.linklayer
                     if (lastSendTime > currentTime)
                         lastSendTime = currentTime;
 
-                    //TODO????
-
                     if (sendLinkLayerTestFunction)
                     {
                         DebugLog("PLL - SEND TEST LINK");
@@ -332,6 +330,9 @@ namespace lib60870.linklayer
                     break;
 
                 case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
+
+                    if (lastSendTime > currentTime)
+                        lastSendTime = currentTime;
 
                     if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                     {

@@ -336,8 +336,15 @@ namespace lib60870.linklayer
 
                 switch (primaryState)
                 {
+                    //    if (self->lastSendTime > currentTime)
+                    //    {
+                    //        /* last sent time not plausible! */
+                    //        self->lastSendTime = currentTime;
 
                     case PrimaryLinkLayerState.TIMEOUT:
+
+                        if (lastSendTime > currentTime)
+                            lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.linkLayerParameters.TimeoutLinkState)) {
                             newState = PrimaryLinkLayerState.IDLE;
@@ -349,6 +356,8 @@ namespace lib60870.linklayer
 
                         originalSendTime = 0;
                         sendLinkLayerTestFunction = false;
+
+                        DebugLog("[SLAVE " + address + "] PLL - SEND FC 09 - REQUEST LINK STATUS\n");
 
                         linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
 
@@ -363,7 +372,9 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
-						
+                            if (lastSendTime > currentTime)
+                                lastSendTime = currentTime;
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 waitingForResponse = false;
@@ -395,10 +406,14 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
+                            if (lastSendTime > currentTime)
+                                lastSendTime = currentTime;
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 waitingForResponse = false;
-                                newState = PrimaryLinkLayerState.IDLE;
+                                lastSendTime = currentTime;
+                                newState = PrimaryLinkLayerState.TIMEOUT;
 
                                 SetState(LinkLayerState.ERROR);
                             }
@@ -422,7 +437,7 @@ namespace lib60870.linklayer
 
                             nextFcb = !nextFcb;
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
+                            originalSendTime = currentTime;
                             waitingForResponse = true;
 
                             newState = PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM;
@@ -446,7 +461,7 @@ namespace lib60870.linklayer
                             nextFcb = !nextFcb;
 
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
+                            originalSendTime = currentTime;
                             waitingForResponse = true;
                             newState = PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND;
                         }
@@ -472,7 +487,7 @@ namespace lib60870.linklayer
                                     nextFcb = !nextFcb;
 
                                     lastSendTime = currentTime;
-                                    originalSendTime = lastSendTime;
+                                    originalSendTime = currentTime;
                                     waitingForResponse = true;
 
                                     newState = PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM;
@@ -484,13 +499,19 @@ namespace lib60870.linklayer
 
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
 
+                        if (lastSendTime > currentTime)
+                            lastSendTime = currentTime;
+
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                         {
 
                             if (currentTime > (originalSendTime + linkLayer.TimeoutRepeat))
                             {
                                 DebugLog("[SLAVE " + address + "] TIMEOUT SC: ASDU not confirmed after repeated transmission");
-                                newState = PrimaryLinkLayerState.IDLE;
+
+                                waitingForResponse = false;
+                                lastSendTime = currentTime;
+                                newState = PrimaryLinkLayerState.TIMEOUT;
 
                                 SetState(LinkLayerState.ERROR);
                             }
@@ -522,6 +543,9 @@ namespace lib60870.linklayer
                         break;
 
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND:
+
+                        if (lastSendTime > currentTime)
+                            lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                         {
