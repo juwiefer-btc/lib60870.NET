@@ -90,6 +90,7 @@ namespace lib60870.CS104
         private Server server;
 
         private bool allowTestCommand = false;
+        private bool allowDelayAcquisition = false;
 
         private ConcurrentQueue<ASDU> receivedASDUs = null;
         private Thread callbackThread = null;
@@ -816,8 +817,6 @@ namespace lib60870.CS104
 
                     DebugLog("Rcvd test command C_TS_NA_1\n");
 
-                    allowTestCommand = true;
-
                     if (allowTestCommand)
                     {
                         if (asdu.Cot == CauseOfTransmission.ACTIVATION)
@@ -900,37 +899,45 @@ namespace lib60870.CS104
 
                     DebugLog("Rcvd delay acquisition command C_CD_NA_1\n");
 
-                    if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.SPONTANEOUS))
+                    if (allowDelayAcquisition)
                     {
-                        if (server.delayAcquisitionHandler != null)
+                        if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.SPONTANEOUS))
                         {
-
-                            DelayAcquisitionCommand dac = (DelayAcquisitionCommand)asdu.GetElement(0);
-
-                            if (dac != null)
+                            if (server.delayAcquisitionHandler != null)
                             {
-                                /* Verify IOA = 0 */
-                                if (dac.ObjectAddress != 0)
+
+                                DelayAcquisitionCommand dac = (DelayAcquisitionCommand)asdu.GetElement(0);
+
+                                if (dac != null)
                                 {
-                                    DebugLog("CS104 SLAVE: delay acquisition command has invalid IOA - should be 0\n");
-                                    asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
-                                    messageHandled = true;
-                                }
-                                else
-                                {
-                                    if (server.delayAcquisitionHandler(server.delayAcquisitionHandlerParameter,
-                                            this, asdu, dac.Delay))
-                                    messageHandled = true;
+                                    /* Verify IOA = 0 */
+                                    if (dac.ObjectAddress != 0)
+                                    {
+                                        DebugLog("CS104 SLAVE: delay acquisition command has invalid IOA - should be 0\n");
+                                        asdu.Cot = CauseOfTransmission.UNKNOWN_INFORMATION_OBJECT_ADDRESS;
+                                        messageHandled = true;
+                                    }
+                                    else
+                                    {
+                                        if (server.delayAcquisitionHandler(server.delayAcquisitionHandlerParameter,
+                                                this, asdu, dac.Delay))
+                                            messageHandled = true;
+                                    }
                                 }
                             }
                         }
+                        else
+                        {
+                            asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
+                            asdu.IsNegative = true;
+                            messageHandled = true;
+                            this.SendASDUInternal(asdu);
+                        }
                     }
-                    else
                     {
-                        asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
-                        asdu.IsNegative = true;
-                        messageHandled = true;
-                        this.SendASDUInternal(asdu);
+                        /* this command is not supported/allowed for IEC 104 */
+                        DebugLog("CS104 SLAVE: Rcvd delay acquisition command C_CD_NA_1 -> not allowed\n");
+                        messageHandled = false;
                     }
 
                     break;
