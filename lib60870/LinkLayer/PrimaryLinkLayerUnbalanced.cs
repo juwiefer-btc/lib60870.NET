@@ -331,19 +331,13 @@ namespace lib60870.linklayer
 
                 long currentTime = SystemUtils.currentTimeMillis();
 
-                if (lastSendTime > currentTime)
-                    currentTime = lastSendTime;
-
                 switch (primaryState)
                 {
-                    //    if (self->lastSendTime > currentTime)
-                    //    {
-                    //        /* last sent time not plausible! */
-                    //        self->lastSendTime = currentTime;
-
                     case PrimaryLinkLayerState.TIMEOUT:
 
                         if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
                             lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.linkLayerParameters.TimeoutLinkState)) {
@@ -363,7 +357,6 @@ namespace lib60870.linklayer
 
                         lastSendTime = currentTime;
                         waitingForResponse = true;
-
                         newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
 
                         break;
@@ -373,13 +366,14 @@ namespace lib60870.linklayer
                         if (waitingForResponse)
                         {
                             if (lastSendTime > currentTime)
+
+                                /* last sent time not plausible! */
                                 lastSendTime = currentTime;
 
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 waitingForResponse = false;
                                 lastSendTime = currentTime;
-
                                 newState = PrimaryLinkLayerState.TIMEOUT;
                             }
 
@@ -392,11 +386,8 @@ namespace lib60870.linklayer
                             linkLayer.SendFixedFramePrimary(FunctionCodePrimary.RESET_REMOTE_LINK, address, false, false);
 
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
                             waitingForResponse = true;
-
                             nextFcb = true;
-
                             newState = PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK; 
                         }
 
@@ -407,6 +398,8 @@ namespace lib60870.linklayer
                         if (waitingForResponse)
                         {
                             if (lastSendTime > currentTime)
+
+                                /* last sent time not plausible! */
                                 lastSendTime = currentTime;
 
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
@@ -450,16 +443,19 @@ namespace lib60870.linklayer
                                 DebugLog("[SLAVE " + address + "] PLL - SEND FC 10 - REQ UD 1");
 
                                 linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_USER_DATA_CLASS_1, address, nextFcb, true);
+
+                                requestClass1Data = false;
                             }
                             else
                             {
                                 DebugLog("[SLAVE " + address + "] PLL - SEND FC 11 - REQ UD 2");
 
                                 linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_USER_DATA_CLASS_2, address, nextFcb, true);
+
+                                requestClass2Data = false;
                             }
 
                             nextFcb = !nextFcb;
-
                             lastSendTime = currentTime;
                             originalSendTime = currentTime;
                             waitingForResponse = true;
@@ -480,12 +476,10 @@ namespace lib60870.linklayer
 
                                     linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, address, nextFcb, true, asdu);
 
-                                    lastSentASDU = nextMessage;
-                                    nextMessage = null;
-
+                                    //lastSentASDU = nextMessage;
+                                    //nextMessage = null;
 
                                     nextFcb = !nextFcb;
-
                                     lastSendTime = currentTime;
                                     originalSendTime = currentTime;
                                     waitingForResponse = true;
@@ -500,6 +494,8 @@ namespace lib60870.linklayer
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
 
                         if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
                             lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
@@ -545,6 +541,8 @@ namespace lib60870.linklayer
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND:
 
                         if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
                             lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
