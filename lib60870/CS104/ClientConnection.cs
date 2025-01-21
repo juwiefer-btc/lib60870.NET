@@ -688,6 +688,7 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
+                        this.SendASDUInternal(asdu);
                         messageHandled = true;
                     }
 
@@ -726,6 +727,7 @@ namespace lib60870.CS104
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
                         this.SendASDUInternal(asdu);
+                        messageHandled = true;
                     }
 
                     break;
@@ -755,6 +757,7 @@ namespace lib60870.CS104
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
                         this.SendASDUInternal(asdu);
+                        messageHandled = true;
                     }
 
                     break;
@@ -888,10 +891,9 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        messageHandled = true;
                         this.SendASDUInternal(asdu);
+                        messageHandled = true;                       
                     }
-
 
                     break;
 
@@ -934,6 +936,7 @@ namespace lib60870.CS104
                             this.SendASDUInternal(asdu);
                         }
                     }
+                    else
                     {
                         /* this command is not supported/allowed for IEC 104 */
                         DebugLog("CS104 SLAVE: Rcvd delay acquisition command C_CD_NA_1 -> not allowed\n");
@@ -964,12 +967,14 @@ namespace lib60870.CS104
                         messageHandled = true;
                     }
                     else
-                    {
                         asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
-                    }
+
                     messageHandled = true;
                     this.SendASDUInternal(asdu);
 
+                    break;
+
+                default: /* no special handler available -> use default handler */
                     break;
             }
 
