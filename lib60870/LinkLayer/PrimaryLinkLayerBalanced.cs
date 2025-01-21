@@ -252,6 +252,8 @@ namespace lib60870.linklayer
                     if (waitingForResponse)
                     {
                         if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
                             lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
@@ -277,6 +279,8 @@ namespace lib60870.linklayer
                     if (waitingForResponse)
                     {
                         if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
                             lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
@@ -297,12 +301,16 @@ namespace lib60870.linklayer
                 case PrimaryLinkLayerState.LINK_LAYERS_AVAILABLE:
 
                     if (lastSendTime > currentTime)
+
+                        /* last sent time not plausible! */
                         lastSendTime = currentTime;
 
                     if (sendLinkLayerTestFunction)
                     {
                         DebugLog("PLL - SEND TEST LINK");
+
                         linkLayer.SendFixedFramePrimary(FunctionCodePrimary.TEST_FUNCTION_FOR_LINK, linkLayerAddressOtherStation, nextFcb, true);
+
                         nextFcb = !nextFcb;
                         lastSendTime = currentTime;
                         originalSendTime = lastSendTime;
@@ -314,11 +322,9 @@ namespace lib60870.linklayer
 
                         if (asdu != null)
                         {
-
                             linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, linkLayerAddressOtherStation, nextFcb, true, asdu);
 
                             nextFcb = !nextFcb;
-                            lastSendASDU = asdu;
                             lastSendTime = currentTime;
                             originalSendTime = lastSendTime;
                             waitingForResponse = true;
@@ -332,6 +338,8 @@ namespace lib60870.linklayer
                 case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
 
                     if (lastSendTime > currentTime)
+
+                        /* last sent time not plausible! */
                         lastSendTime = currentTime;
 
                     if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
