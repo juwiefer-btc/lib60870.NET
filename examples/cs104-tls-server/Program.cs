@@ -112,23 +112,23 @@ namespace cs104_tls_server
 			};
 				
 			// Own certificate has to be a pfx file that contains the private key
-			X509Certificate2 ownCertificate = new X509Certificate2 ("server_CA1_1.pfx");
+			X509Certificate2 ownCertificate = new X509Certificate2 ("server.pfx");
 
 			// Create a new security information object to configure TLS
 			TlsSecurityInformation secInfo = new TlsSecurityInformation (ownCertificate);
 
 			// Add allowed client certificates - not required when AllowOnlySpecificCertificates == false
-			secInfo.AddAllowedCertificate (new X509Certificate2 ("client_CA1_1.pem"));
-			secInfo.AddAllowedCertificate (new X509Certificate2 ("client_CA1_2.pem"));
+			secInfo.AddAllowedCertificate (new X509Certificate2 ("client1.cer"));
+			//secInfo.AddAllowedCertificate (new X509Certificate2 ("client_CA1_2.pem"));
 
 			// Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
-			secInfo.AddCA (new X509Certificate2 ("root_CA1.pem"));
+			secInfo.AddCA (new X509Certificate2 ("root.cer"));
 
 			// Check if the certificate is signed by a provided CA
 			secInfo.ChainValidation = true;
 
 			// Allow only TLS versions 1.2 and 1.3
-			secInfo.TlsVersion = SslProtocols.Tls12 | SslProtocols.Tls13;
+			secInfo.TlsVersion = SslProtocols.Tls13;
 
             // Check that the shown client certificate is in the list of allowed certificates
 			secInfo.AllowOnlySpecificCertificates = false;
