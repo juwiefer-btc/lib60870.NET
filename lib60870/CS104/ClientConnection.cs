@@ -1219,21 +1219,17 @@ namespace lib60870.CS104
 
 			// S-message
 			else if (buffer[2] == 0x01)
-            {
-                if (isActive == false)
-                {
-                    // connection not active
-                    DebugLog("Connection not active -> close connection");
-
-                    return false;
-                }
-
+            {               
                 int seqNo = (buffer[4] + buffer[5] * 0x100) / 2;
 
                 DebugLog("Recv S(" + seqNo + ") (own sendcounter = " + sendCount + ")");
 
                 if (CheckSequenceNumber(seqNo) == false)
+                {
+                    DebugLog("S message - sequence number mismatch");
                     return false;
+                }
+                    
             }
             else
             {
