@@ -128,7 +128,7 @@ namespace cs104_tls_server
 			secInfo.ChainValidation = true;
 
 			// Allow only TLS versions 1.2 and 1.3
-			secInfo.TlsVersion = SslProtocols.Tls13;
+			secInfo.TlsVersion = SslProtocols.Tls12 | SslProtocols.Tls13;
 
             // Check that the shown client certificate is in the list of allowed certificates
 			secInfo.AllowOnlySpecificCertificates = false;
