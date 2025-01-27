@@ -63,6 +63,14 @@ namespace lib60870.CS104
 
         static byte[] TESTFR_ACT_MSG = new byte[] { 0x68, 0x04, 0x43, 0x00, 0x00, 0x00 };
 
+        public enum MasterConnectionState
+        {
+            M_CON_STATE_STOPPED,
+            M_CON_STATE_STARTED,
+            M_CON_STATE_UNCONFIRMED_STOPPED
+        }
+
+        private MasterConnectionState state;
         private int sendCount = 0;
         private int receiveCount = 0;
 
@@ -1101,11 +1109,17 @@ namespace lib60870.CS104
         {
             UInt64 currentTime = (UInt64) SystemUtils.currentTimeMillis();
 
-            if ((buffer[2] & 1) == 0)
+            if ((buffer[2] & 1) == 0) /* I message */
             {
                 if (msgSize < 7)
                 {
                     DebugLog("I msg too small!");
+                    return false;
+                }
+
+                if (state == MasterConnectionState.M_CON_STATE_STARTED)
+                {
+                    DebugLog("Received I message while connection not active -> close connection");
                     return false;
                 }
 					
@@ -1197,6 +1211,8 @@ namespace lib60870.CS104
 
                 DebugLog("Send STOPDT_CON");
 
+                state = MasterConnectionState.M_CON_STATE_STOPPED;
+
                 if (this.isActive == true)
                 {
                     this.isActive = false;
@@ -1230,10 +1246,28 @@ namespace lib60870.CS104
                     return false;
                 }
                     
+                if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
+                {
+                    if (unconfirmedReceivedIMessages < 1)
+                    {
+                        state = MasterConnectionState.M_CON_STATE_STOPPED;
+
+                        DebugLog("Send STOPDT_CON\n");
+
+                        socketStream.Write(STOPDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
+                    }
+                }
+                else if (state == MasterConnectionState.M_CON_STATE_STOPPED)
+                {
+                    DebugLog("S message sin stopped state -> active close\n");
+                    /* actively close connection */
+                    return false;
+                }    
             }
             else
             {
                 DebugLog("Unknown message");
+                return true;
             }
 
             ResetT3Timeout(currentTime);
@@ -1546,6 +1580,7 @@ namespace lib60870.CS104
         public void Close()
         {
             running = false;
+            state = MasterConnectionState.M_CON_STATE_STOPPED;
         }
 
         public void ASDUReadyToSend()

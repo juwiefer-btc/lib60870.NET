@@ -61,7 +61,7 @@ namespace lib60870.CS104
         ACTIVE,
 
         /// <summary>
-        /// The connection enterend inactive state
+        /// The connection entered inactive state
         /// </summary>
         INACTIVE,
 
@@ -1076,9 +1076,9 @@ namespace lib60870.CS104
         }
 
         internal void CallConnectionEventHandler(ClientConnection connection, ClientConnectionEvent e)
-        {
-            if (connectionEventHandler != null)
-                connectionEventHandler(connectionEventHandlerParameter, connection, e);
+        {         
+                if (connectionEventHandler != null)
+                    connectionEventHandler(connectionEventHandlerParameter, connection, e);            
         }
 
         internal void Activated(ClientConnection activeConnection)
