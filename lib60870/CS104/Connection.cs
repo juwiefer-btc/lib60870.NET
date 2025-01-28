@@ -68,6 +68,15 @@ namespace lib60870.CS104
         CONNECT_FAILED = 4
     }
 
+    public enum CS104_ConState
+    {
+        STATE_IDLE = 0,
+        STATE_INACTIVE = 1,
+        STATE_ACTIVE = 2,
+        STATE_WAITING_FOR_STARTDT_CON = 3,
+        STATE_WAITING_FOR_STOPDT_CON = 4
+    }
+
     /// <summary>
     /// Provides some Connection statistics.
     /// </summary>
@@ -204,6 +213,8 @@ namespace lib60870.CS104
 
         /**********************************************/
 
+        CS104_ConState conState;
+
         private bool checkSequenceNumbers = true;
 
         private Queue<ASDU> waitingToBeSent = null;
@@ -246,7 +257,7 @@ namespace lib60870.CS104
 
         private string localIpAddress = null;
         private int localTcpPort = 0;
-
+   
         /// <summary>
         /// Set the local IP address for the local connection endpoint
         /// </summary>
@@ -379,6 +390,8 @@ namespace lib60870.CS104
 
             if (useSendMessageQueue)
                 waitingToBeSent = new Queue<ASDU>();
+
+            conState = CS104_ConState.STATE_IDLE;
 
             statistics.Reset();
         }
@@ -1017,6 +1030,7 @@ namespace lib60870.CS104
             {
                 try
                 {
+                    conState = CS104_ConState.STATE_WAITING_FOR_STARTDT_CON;
                     netStream.Write(STARTDT_ACT_MSG, 0, STARTDT_ACT_MSG.Length);
                 }
                 catch (Exception ex)
@@ -1060,6 +1074,8 @@ namespace lib60870.CS104
 
                         SendSMessage();
                     }
+
+                    conState = CS104_ConState.STATE_WAITING_FOR_STOPDT_CON;
 
                     netStream.Write(STOPDT_ACT_MSG, 0, STOPDT_ACT_MSG.Length);
                 }
@@ -1440,6 +1456,8 @@ namespace lib60870.CS104
                     {
                         sentMessageHandler(sentMessageHandlerParameter, STARTDT_CON_MSG, 6);
                     }
+
+                    conState = CS104_ConState.STATE_ACTIVE;
                 }
                 else if (buffer[2] == 0x0b)
                 { /* STARTDT_CON */
@@ -1448,6 +1466,8 @@ namespace lib60870.CS104
                     if (connectionHandler != null)
                         connectionHandler(connectionHandlerParameter, ConnectionEvent.STARTDT_CON_RECEIVED);
 
+                    conState = CS104_ConState.STATE_ACTIVE;
+
                 }
                 else if (buffer[2] == 0x23)
                 { /* STOPDT_CON */
@@ -1455,6 +1475,8 @@ namespace lib60870.CS104
 
                     if (connectionHandler != null)
                         connectionHandler(connectionHandlerParameter, ConnectionEvent.STOPDT_CON_RECEIVED);
+
+                    conState = CS104_ConState.STATE_INACTIVE;
                 }
 
             }
@@ -1824,6 +1846,7 @@ namespace lib60870.CS104
 
                     if (running)
                     {
+                        conState = CS104_ConState.STATE_INACTIVE;
 
                         bool loopRunning = running;
 
@@ -1846,9 +1869,11 @@ namespace lib60870.CS104
 
                                     bool handleMessage = true;
 
+                                    CS104_ConState oldState = conState;
+
                                     if (recvRawMessageHandler != null)
                                         handleMessage = recvRawMessageHandler(recvRawMessageHandlerParameter, bytes, bytesRec);
-
+                                 
                                     if (handleMessage)
                                     {
                                         if (checkMessage(bytes, bytesRec) == false)
@@ -1858,7 +1883,17 @@ namespace lib60870.CS104
                                         }
                                     }
 
-                                    if (unconfirmedReceivedIMessages >= apciParameters.W)
+                                    CS104_ConState newState = conState;
+
+                                    if ((newState != oldState) && connectionHandler != null)
+                                    {
+                                        if (newState == CS104_ConState.STATE_ACTIVE)
+                                            connectionHandler(connectionHandlerParameter, ConnectionEvent.STARTDT_CON_RECEIVED);
+                                        else if (newState == CS104_ConState.STATE_INACTIVE)
+                                            connectionHandler(connectionHandlerParameter, ConnectionEvent.STOPDT_CON_RECEIVED);
+                                    }
+
+                                    if (unconfirmedReceivedIMessages >= apciParameters.W || conState == CS104_ConState.STATE_WAITING_FOR_STOPDT_CON)
                                     {
                                         lastConfirmationTime = SystemUtils.currentTimeMillis();
 
@@ -1971,6 +2006,20 @@ namespace lib60870.CS104
             {
                 DebugLog(e.ToString());
             }
+
+            if (unconfirmedReceivedIMessages > 0)
+            {
+                /* confirm all unconfirmed messages before stopping the connection */
+
+                lastConfirmationTime = SystemUtils.currentTimeMillis();
+
+                unconfirmedReceivedIMessages = 0;
+                timeoutT2Triggered = false;
+
+                SendSMessage();
+            }
+
+            conState = CS104_ConState.STATE_IDLE;
 
             running = false;
             connecting = false;

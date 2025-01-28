@@ -65,9 +65,9 @@ namespace lib60870.CS104
 
         public enum MasterConnectionState
         {
-            M_CON_STATE_STOPPED,
-            M_CON_STATE_STARTED,
-            M_CON_STATE_UNCONFIRMED_STOPPED
+            M_CON_STATE_STOPPED, /* only U frames allowed */
+            M_CON_STATE_STARTED, /* U, I, S frames allowed */
+            M_CON_STATE_UNCONFIRMED_STOPPED /* only U, S frames allowed */
         }
 
         private MasterConnectionState state;
