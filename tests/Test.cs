@@ -285,6 +285,124 @@ namespace tests
             server.Stop ();
         }
 
+        struct CS104SlaveEventQueue1
+        {
+            public int asduHandlerCalled;
+            public int spontCount;
+            public short lastScaledValue;
+        }
+
+        private static bool EventQueue1_asduReceivedHandler(object param, ASDU asdu)
+        {
+            CS104SlaveEventQueue1 info = (CS104SlaveEventQueue1)param;
+
+            info.asduHandlerCalled++;
+
+            if(asdu.Cot == CauseOfTransmission.SPONTANEOUS)
+            {
+                info.spontCount++;
+
+                if (asdu.TypeId == TypeID.M_ME_NB_1)
+                {
+                    MeasuredValueScaled mv = (MeasuredValueScaled)asdu.GetElement(0);
+
+                    info.lastScaledValue = (short)mv.ScaledValue.Value;
+                }
+            }
+            return true;
+        }
+
+        [Test()]
+        public void TestUnconfirmedStoppedState()
+        {
+            ApplicationLayerParameters parameters = new ApplicationLayerParameters();
+            APCIParameters apciParameters = new APCIParameters ();
+
+            Server server = new Server(apciParameters, parameters);
+
+            server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
+
+            server.SetLocalPort(20213);
+
+            server.Start();
+
+            server.DebugOutput = true;
+
+            ConnectionException se = null;
+
+            CS104SlaveEventQueue1 info;
+            info.asduHandlerCalled = 0;
+            info.spontCount = 0;
+            info.lastScaledValue = 0;
+
+            int scaledValue = 0;
+
+            for (int i = 0; i < 15; i++)
+            {
+                ASDU newASDU = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
+
+                scaledValue++;
+
+                newASDU.AddInformationObject(new MeasuredValueScaled(110, scaledValue, new QualityDescriptor()));
+
+                server.EnqueueASDU(newASDU);
+            }
+
+            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+
+            connection.SetASDUReceivedHandler(EventQueue1_asduReceivedHandler, info);
+
+            connection.Connect();
+
+            connection.SendStartDT();
+
+            Thread.Sleep(500);
+
+            connection.SendStopDT();
+
+            connection.Close();
+
+            Assert.Equals(14, info.lastScaledValue);
+
+            info.asduHandlerCalled = 0;
+            info.spontCount = 0;
+
+            connection.Connect();
+
+            connection.SendStartDT();
+
+            for (int i = 0; i < 6; i++) 
+            {
+                Thread.Sleep (10);
+
+                ASDU newASDU = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
+
+                scaledValue++;
+
+                newASDU.AddInformationObject(new MeasuredValueScaled(110, scaledValue, new QualityDescriptor()));
+
+                server.EnqueueASDU(newASDU);
+            }
+
+            Thread.Sleep(500);
+
+            connection.SendStopDT();
+
+            Thread.Sleep(5000);
+
+            connection.Close();
+
+            Assert.Equals(6, info.asduHandlerCalled);
+            Assert.Equals(6, info.spontCount);
+            Assert.Equals(20, info.lastScaledValue);
+
+            Assert.IsNotNull(se);
+            Assert.AreEqual(se.Message, "not connected");
+            Assert.AreEqual(10057, ((SocketException)se.InnerException).ErrorCode);
+
+            server.Stop();
+        }
+
         [Test()]
         //[Ignore("Ignore to save execution time")]
         public void TestSendIMessageAfterStopDT()

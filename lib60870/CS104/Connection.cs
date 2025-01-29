@@ -1075,9 +1075,9 @@ namespace lib60870.CS104
                         SendSMessage();
                     }
 
-                    conState = CS104_ConState.STATE_WAITING_FOR_STOPDT_CON;
-
                     netStream.Write(STOPDT_ACT_MSG, 0, STOPDT_ACT_MSG.Length);
+
+                    conState = CS104_ConState.STATE_WAITING_FOR_STOPDT_CON;
                 }
                 catch (Exception ex)
                 {
