@@ -335,7 +335,7 @@ namespace tests
             info.spontCount = 0;
             info.lastScaledValue = 0;
 
-            int scaledValue = 0;
+            short scaledValue = 0;
 
             for (int i = 0; i < 15; i++)
             {
