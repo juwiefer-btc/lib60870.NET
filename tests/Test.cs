@@ -6,6 +6,7 @@ using lib60870;
 using lib60870.CS101;
 using lib60870.CS104;
 using System.Security.Cryptography;
+using System.Runtime.Intrinsics.Arm;
 
 namespace tests
 {
@@ -241,6 +242,77 @@ namespace tests
                 spi = new StepPositionInformation (103, -65, false, new QualityDescriptor ());
             } catch (ArgumentOutOfRangeException) {
             }
+        }
+
+        [Test ()]
+        public void TestStepPositionInformationWithCP24Time2a()
+        {
+            CP24Time2a time = new CP24Time2a(45, 23, 538);
+
+            StepPositionWithCP24Time2a spi = new StepPositionWithCP24Time2a(103, 27, false, new QualityDescriptor(), time);
+
+            Assert.IsFalse(spi.Transient);
+            Assert.NotNull(spi.Quality);
+            Assert.AreEqual(45, spi.Timestamp.Minute);
+            Assert.AreEqual(23, spi.Timestamp.Second);
+            Assert.AreEqual(538, spi.Timestamp.Millisecond);
+
+            try
+            {
+                spi = new StepPositionWithCP24Time2a(103, 64, false, new QualityDescriptor(), time);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+
+            Assert.IsNull(spi);
+
+            try
+            {
+                spi = new StepPositionWithCP24Time2a(103, -65, false, new QualityDescriptor(), time);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+
+        }
+
+        [Test()]
+        public void TestStepPositionInformationWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            StepPositionWithCP56Time2a spi = new StepPositionWithCP56Time2a(103, 27, false, new QualityDescriptor(), time);
+
+            Assert.IsFalse(spi.Transient);
+            Assert.NotNull(spi.Quality);
+            Assert.AreEqual(time.Year, spi.Timestamp.Year);
+            Assert.AreEqual(time.Month, spi.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, spi.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, spi.Timestamp.Minute);
+            Assert.AreEqual(time.Second, spi.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, spi.Timestamp.Millisecond);
+
+            try
+            {
+                spi = new StepPositionWithCP56Time2a(103, 64, false, new QualityDescriptor(), time);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+
+            Assert.IsNull(spi);
+
+            try
+            {
+                spi = new StepPositionWithCP56Time2a(103, -65, false, new QualityDescriptor(), time);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+
         }
 
         [Test ()]
@@ -1443,6 +1515,61 @@ namespace tests
 
         }
 
+        [Test()]
+        public void TestDoubleCommand()
+        {
+            DoubleCommand dc = new DoubleCommand(10001, 10, false, 12);
+
+            Assert.AreEqual (10001, dc.ObjectAddress);
+            Assert.AreEqual (10, dc.State);
+            Assert.AreEqual (false, dc.Select);
+            Assert.AreEqual (12, dc.QU);
+
+            dc = new DoubleCommand(10001, 10, false, 3);
+
+            Assert.AreEqual(10001, dc.ObjectAddress);
+            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(false, dc.Select);
+            Assert.AreEqual(3, dc.QU);
+
+        }
+
+        [Test()]
+        public void TestDoubleCommandWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            DoubleCommandWithCP56Time2a dc = new DoubleCommandWithCP56Time2a(10001, 10, false, 12, time);
+
+            Assert.AreEqual(10001, dc.ObjectAddress);
+            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(false, dc.Select);
+            Assert.AreEqual(12, dc.QU);
+            Assert.AreEqual(time.Year, dc.Timestamp.Year);
+            Assert.AreEqual(time.Month, dc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, dc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, dc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, dc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, dc.Timestamp.Millisecond);
+
+            dc = new DoubleCommandWithCP56Time2a(10001, 10, false, 3, time);
+
+            Assert.AreEqual(10001, dc.ObjectAddress);
+            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(false, dc.Select);
+            Assert.AreEqual(3, dc.QU);
+            Assert.AreEqual(time.Year, dc.Timestamp.Year);
+            Assert.AreEqual(time.Month, dc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, dc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, dc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, dc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, dc.Timestamp.Millisecond);
+        }
+
+
+
         [Test ()]
         public void TestSingleCommand ()
         {
@@ -1465,6 +1592,46 @@ namespace tests
             Assert.AreEqual (17, sc.QU);
             Assert.AreEqual (false, sc.State);
             Assert.AreEqual (true, sc.Select);
+        }
+
+        [Test()]
+        public void TestSingleCommandWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            SingleCommandWithCP56Time2a sc = new SingleCommandWithCP56Time2a(10002, true, false, 12, time);
+
+            Assert.AreEqual(10002, sc.ObjectAddress);
+            Assert.AreEqual(true, sc.State);
+            Assert.AreEqual(false, sc.Select);
+            Assert.AreEqual(12, sc.QU);
+
+            sc = new SingleCommandWithCP56Time2a(10002, false, true, 3, time);
+
+            Assert.AreEqual(10002, sc.ObjectAddress);
+            Assert.AreEqual(false, sc.State);
+            Assert.AreEqual(true, sc.Select);
+            Assert.AreEqual(3, sc.QU);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc.QU = 17;
+
+            Assert.AreEqual(17, sc.QU);
+            Assert.AreEqual(false, sc.State);
+            Assert.AreEqual(true, sc.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
         }
 
         [Test ()]
@@ -1655,6 +1822,215 @@ namespace tests
             Assert.AreEqual (538, dpi2.Timestamp.Millisecond);
         }
 
+        [Test()]
+        public void TestMeasuredValueShortWithCP24Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            CP24Time2a time = new CP24Time2a(45, 23, 538);
+
+            MeasuredValueShortWithCP24Time2a mvs = new MeasuredValueShortWithCP24Time2a(101, 0, new QualityDescriptor(), time);
+
+            mvs.Encode(bf, alParameters, true);
+            Assert.AreEqual(8, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(11, bf.GetMsgSize());
+
+            MeasuredValueShortWithCP24Time2a mvs2 = new MeasuredValueShortWithCP24Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(101, mvs2.ObjectAddress);
+            Assert.AreEqual(0, mvs2.Value);
+            Assert.AreEqual(45, mvs2.Timestamp.Minute);
+            Assert.AreEqual(23, mvs2.Timestamp.Second);
+            Assert.AreEqual(538, mvs2.Timestamp.Millisecond);
+        }
+
+        [Test()]
+        public void TestMeasuredValueShortWithCP56Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            MeasuredValueShortWithCP56Time2a mvs = new MeasuredValueShortWithCP56Time2a(101, 0, new QualityDescriptor(), time);
+
+            mvs.Encode(bf, alParameters, true);
+            Assert.AreEqual(12, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(15, bf.GetMsgSize());
+
+            MeasuredValueShortWithCP56Time2a mvs2 = new MeasuredValueShortWithCP56Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(101, mvs2.ObjectAddress);
+            Assert.AreEqual(0, mvs2.Value);
+            Assert.AreEqual(time.Year, mvs2.Timestamp.Year);
+            Assert.AreEqual(time.Month, mvs2.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, mvs2.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, mvs2.Timestamp.Minute);
+            Assert.AreEqual(time.Second, mvs2.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, mvs2.Timestamp.Millisecond);
+        }
+
+
+        [Test()]
+        public void TestMeasuredValueNormalizedWithCP24Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            CP24Time2a time = new CP24Time2a(45, 23, 538);
+
+            MeasuredValueNormalizedWithCP24Time2a mvn = new MeasuredValueNormalizedWithCP24Time2a(201, 0.5f, new QualityDescriptor(), time);
+
+            mvn.Encode(bf, alParameters, true);
+            Assert.AreEqual(6, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvn.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvn.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(9, bf.GetMsgSize());
+
+            MeasuredValueNormalizedWithCP24Time2a mvn2 = new MeasuredValueNormalizedWithCP24Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(201, mvn2.ObjectAddress);
+            Assert.AreEqual(0.5f, mvn2.NormalizedValue, 0.001);
+            Assert.AreEqual(45, mvn2.Timestamp.Minute);
+            Assert.AreEqual(23, mvn2.Timestamp.Second);
+            Assert.AreEqual(538, mvn2.Timestamp.Millisecond);
+        }
+
+        [Test()]
+        public void TestMeasuredValueNormalizedWithCP56Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            MeasuredValueNormalizedWithCP56Time2a mvn = new MeasuredValueNormalizedWithCP56Time2a(201, 0.5f, new QualityDescriptor(), time);
+
+            mvn.Encode(bf, alParameters, true);
+            Assert.AreEqual(10, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvn.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvn.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(13, bf.GetMsgSize());
+
+            MeasuredValueNormalizedWithCP56Time2a mvn2 = new MeasuredValueNormalizedWithCP56Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(201, mvn2.ObjectAddress);
+            Assert.AreEqual(0.5f, mvn2.NormalizedValue, 0.001);
+            Assert.AreEqual(time.Year, mvn2.Timestamp.Year);
+            Assert.AreEqual(time.Month, mvn2.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, mvn2.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, mvn2.Timestamp.Minute);
+            Assert.AreEqual(time.Second, mvn2.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, mvn2.Timestamp.Millisecond);
+        }
+
+
+        [Test()]
+        public void TestMeasuredValueScaledWithCP24Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            CP24Time2a time = new CP24Time2a(45, 23, 538);
+
+            MeasuredValueScaledWithCP24Time2a mvs = new MeasuredValueScaledWithCP24Time2a(101, 0, new QualityDescriptor(), time);
+
+            mvs.Encode(bf, alParameters, true);
+            Assert.AreEqual(6, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(9, bf.GetMsgSize());
+
+            MeasuredValueScaledWithCP24Time2a mvs2 = new MeasuredValueScaledWithCP24Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(101, mvs2.ObjectAddress);
+            Assert.AreEqual(0, mvs2.ScaledValue);
+            Assert.AreEqual(45, mvs2.Timestamp.Minute);
+            Assert.AreEqual(23, mvs2.Timestamp.Second);
+            Assert.AreEqual(538, mvs2.Timestamp.Millisecond);
+        }
+
+        [Test()]
+        public void TestMeasuredValueScaledWithCP56Time2a()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            MeasuredValueScaledWithCP56Time2a mvs = new MeasuredValueScaledWithCP56Time2a(101, 0, new QualityDescriptor(), time);
+
+            mvs.Encode(bf, alParameters, true);
+            Assert.AreEqual(10, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+            Assert.AreEqual(13, bf.GetMsgSize());
+
+            MeasuredValueScaledWithCP56Time2a mvs2 = new MeasuredValueScaledWithCP56Time2a(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(101, mvs2.ObjectAddress);
+            Assert.AreEqual(0, mvs2.ScaledValue);
+            Assert.AreEqual(time.Year, mvs2.Timestamp.Year);
+            Assert.AreEqual(time.Month, mvs2.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, mvs2.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, mvs2.Timestamp.Minute);
+            Assert.AreEqual(time.Second, mvs2.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, mvs2.Timestamp.Millisecond);
+        }
+
         [Test ()]
         public void TestDoublePointInformationWithCP56Time2a ()
         {
@@ -1732,6 +2108,60 @@ namespace tests
             Assert.AreEqual (201, mvn2.ObjectAddress);
             Assert.AreEqual (0.5f, mvn2.NormalizedValue, 0.001);
         }
+
+
+        [Test()]
+        public void TestMeasuredValueShort()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            MeasuredValueShort mvs = new MeasuredValueShort(201, 0.5f, new QualityDescriptor());
+
+            mvs.Encode(bf, alParameters, true);
+            Assert.AreEqual(5, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+
+            MeasuredValueShort mvs2 = new MeasuredValueShort(alParameters, buffer, 0, false);
+
+            Assert.AreEqual(201, mvs2.ObjectAddress);
+            Assert.AreEqual(0.5f, mvs2.Value, 0.001);
+        }
+
+
+        [Test()]
+        public void TestMeasuredValueScaled()
+        {
+            byte[] buffer = new byte[257];
+
+            BufferFrame bf = new BufferFrame(buffer, 0);
+
+            ApplicationLayerParameters alParameters = new ApplicationLayerParameters();
+
+            MeasuredValueScaled mvs = new MeasuredValueScaled (201, 0, new QualityDescriptor ());
+
+            mvs.Encode (bf, alParameters, true);
+            Assert.AreEqual(3, bf.GetMsgSize());
+
+            bf.ResetFrame();
+
+            mvs.Encode(bf, alParameters, false);
+            Assert.AreEqual(alParameters.SizeOfIOA + mvs.GetEncodedSize(), bf.GetMsgSize());
+
+            MeasuredValueScaled mvs2 = new MeasuredValueScaled (alParameters, buffer, 0, false);
+
+            Assert.AreEqual(201, mvs2.ObjectAddress);
+            Assert.Equals(0, mvs2.ScaledValue);
+
+        }
+
 
         public class SimpleFile : TransparentFile
         {
@@ -2447,6 +2877,23 @@ namespace tests
                 Console.WriteLine("Server stopped");
             }
         }
+
+
+
+        [Test()]
+        public void TestSingleEventType()
+        {
+            SingleEvent singleEvent = new SingleEvent();
+
+            EventState eventState = singleEvent.State;
+
+            Assert.Equals(0, eventState);
+
+            QualityDescriptorP qdp = singleEvent.QDP;
+
+            Assert.Equals(0, qdp);
+        }
+
 
     }
 }
