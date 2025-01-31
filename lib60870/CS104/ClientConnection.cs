@@ -65,9 +65,9 @@ namespace lib60870.CS104
 
         public enum MasterConnectionState
         {
-            M_CON_STATE_STOPPED, /* only U frames allowed */
-            M_CON_STATE_STARTED, /* U, I, S frames allowed */
-            M_CON_STATE_UNCONFIRMED_STOPPED /* only U, S frames allowed */
+            M_CON_STATE_STOPPED = 0,
+            M_CON_STATE_STARTED = 1,
+            M_CON_STATE_UNCONFIRMED_STOPPED = 2
         }
 
         private MasterConnectionState state;
@@ -299,7 +299,10 @@ namespace lib60870.CS104
                     isActive = value;
 
                     if (isActive)
+                    {
                         DebugLog("is active");
+                        state = MasterConnectionState.M_CON_STATE_STARTED;
+                    }                        
                     else
                         DebugLog("is not active");
                 }
@@ -1107,172 +1110,214 @@ namespace lib60870.CS104
 
         private bool HandleMessage(byte[] buffer, int msgSize)
         {
-            UInt64 currentTime = (UInt64) SystemUtils.currentTimeMillis();
+            UInt64 currentTime = (UInt64)SystemUtils.currentTimeMillis();
 
-            if ((buffer[2] & 1) == 0) /* I message */
+            if (msgSize >= 3)
             {
-                if (msgSize < 7)
+                if (buffer[0] != 0x68)
                 {
-                    DebugLog("I msg too small!");
+                    DebugLog("Invalid START character!");
                     return false;
                 }
 
-                if (state == MasterConnectionState.M_CON_STATE_STARTED)
-                {
-                    DebugLog("Received I message while connection not active -> close connection");
-                    return false;
-                }
-					
-                if (timeoutT2Triggered == false)
-                {
-                    timeoutT2Triggered = true;
-                    lastConfirmationTime = currentTime; /* start timeout T2 */
-                }
+                byte lengthOfApdu = buffer[1];
 
-                int frameSendSequenceNumber = ((buffer[3] * 0x100) + (buffer[2] & 0xfe)) / 2;
-                int frameRecvSequenceNumber = ((buffer[5] * 0x100) + (buffer[4] & 0xfe)) / 2;
-
-                DebugLog("Received I frame: N(S) = " + frameSendSequenceNumber + " N(R) = " + frameRecvSequenceNumber);
-
-                /* check the receive sequence number N(R) - connection will be closed on an unexpected value */
-                if (frameSendSequenceNumber != receiveCount)
+                if (lengthOfApdu != msgSize - 2)
                 {
-                    DebugLog("Sequence error: Close connection!");
+                    DebugLog("Invalid length of APDU");
                     return false;
                 }
 
-                if (CheckSequenceNumber(frameRecvSequenceNumber) == false)
+                if ((buffer[2] & 1) == 0) /* I message */
                 {
-                    DebugLog("Sequence number check failed");
-                    return false;
-                }
-
-                receiveCount = (receiveCount + 1) % 32768;
-                unconfirmedReceivedIMessages++;
-
-                if (isActive)
-                {
-                    try
+                    if (msgSize < 7)
                     {
-                        ASDU asdu = new ASDU(alParameters, buffer, 6, msgSize);
-					
-                        // push to handler thread for processing
-                        DebugLog("Enqueue received I-message for processing");
-                        receivedASDUs.Enqueue(asdu);
+                        DebugLog("I msg too small!");
+                        return false;
                     }
-                    catch (ASDUParsingException e)
+
+                    //if (state != MasterConnectionState.M_CON_STATE_STARTED)
+                    //{
+                    //    DebugLog("Received I message while connection not active -> close connection");
+                    //    return false;
+                    //}
+
+                    if (timeoutT2Triggered == false)
                     {
-                        DebugLog("ASDU parsing failed: " + e.Message);
+                        timeoutT2Triggered = true;
+                        lastConfirmationTime = currentTime; /* start timeout T2 */
+                    }
+
+                    int frameSendSequenceNumber = ((buffer[3] * 0x100) + (buffer[2] & 0xfe)) / 2;
+                    int frameRecvSequenceNumber = ((buffer[5] * 0x100) + (buffer[4] & 0xfe)) / 2;
+
+                    DebugLog("Received I frame: N(S) = " + frameSendSequenceNumber + " N(R) = " + frameRecvSequenceNumber);
+
+                    /* check the receive sequence number N(R) - connection will be closed on an unexpected value */
+                    if (frameSendSequenceNumber != receiveCount)
+                    {
+                        DebugLog("Sequence error: Close connection!");
+                        return false;
+                    }
+
+                    if (CheckSequenceNumber(frameRecvSequenceNumber) == false)
+                    {
+                        DebugLog("Sequence number check failed");
+                        return false;
+                    }
+
+                    receiveCount = (receiveCount + 1) % 32768;
+                    unconfirmedReceivedIMessages++;
+
+                    if (isActive)
+                    {
+                        try
+                        {
+                            ASDU asdu = new ASDU(alParameters, buffer, 6, msgSize);
+
+                            // push to handler thread for processing
+                            DebugLog("Enqueue received I-message for processing");
+                            receivedASDUs.Enqueue(asdu);
+                        }
+                        catch (ASDUParsingException e)
+                        {
+                            DebugLog("ASDU parsing failed: " + e.Message);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // connection not active
+                        DebugLog("Connection not active -> close connection");
+
                         return false;
                     }
                 }
-                else
+
+                // Check for TESTFR_ACT message
+                else if ((buffer[2] & 0x43) == 0x43)
                 {
-                    // connection not active
-                    DebugLog("Connection not active -> close connection");
+                    DebugLog("Send TESTFR_CON");
 
-                    return false;
-                }
-            }
-
-			// Check for TESTFR_ACT message
-			else if ((buffer[2] & 0x43) == 0x43)
-            {
-                DebugLog("Send TESTFR_CON");
-
-                socketStream.Write(TESTFR_CON_MSG, 0, TESTFR_CON_MSG.Length);
-            } 
-
-			// Check for STARTDT_ACT message
-			else if ((buffer[2] & 0x07) == 0x07)
-            {
-                DebugLog("Send STARTDT_CON");
-
-                if (this.isActive == false)
-                {
-                    this.isActive = true;
-
-                    this.server.Activated(this);
+                    socketStream.Write(TESTFR_CON_MSG, 0, TESTFR_CON_MSG.Length);
                 }
 
-                socketStream.Write(STARTDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
-            }
-
-			// Check for STOPDT_ACT message
-			else if ((buffer[2] & 0x13) == 0x13)
-            {
-                if (unconfirmedReceivedIMessages > 0)
+                // Check for STARTDT_ACT message
+                else if ((buffer[2] & 0x07) == 0x07)
                 {
-                    lastConfirmationTime = currentTime;
-                    unconfirmedReceivedIMessages = 0;
-                    timeoutT2Triggered = false;
-                    SendSMessage();
-                }
-
-                DebugLog("Send STOPDT_CON");
-
-                state = MasterConnectionState.M_CON_STATE_STOPPED;
-
-                if (this.isActive == true)
-                {
-                    this.isActive = false;
-
-                    this.server.Deactivated(this);
-                }
-
-                socketStream.Write(STOPDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
-            } 
-
-			// Check for TESTFR_CON message
-			else if ((buffer[2] & 0x83) == 0x83)
-            {
-                DebugLog("Recv TESTFR_CON");
-
-                waitingForTestFRcon = false;
-
-                ResetT3Timeout(currentTime);
-            }
-
-			// S-message
-			else if (buffer[2] == 0x01)
-            {               
-                int seqNo = (buffer[4] + buffer[5] * 0x100) / 2;
-
-                DebugLog("Recv S(" + seqNo + ") (own sendcounter = " + sendCount + ")");
-
-                if (CheckSequenceNumber(seqNo) == false)
-                {
-                    DebugLog("S message - sequence number mismatch");
-                    return false;
-                }
-                    
-                if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
-                {
-                    if (unconfirmedReceivedIMessages < 1)
+                    if (this.isActive == false)
                     {
+                        this.isActive = true;
+
+                        this.server.Activated(this);
+                    }
+
+                    DebugLog("Send STARTDT_CON");
+
+                    socketStream.Write(STARTDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
+                }
+
+                // Check for STOPDT_ACT message
+                else if ((buffer[2] & 0x13) == 0x13)
+                {
+                    DebugLog("Received STARTDT_ACT");
+
+                    if (this.isActive == true)
+                    {
+                        this.isActive = false;
+
+                        this.server.Deactivated(this);
+                    }
+
+                    /* Send S-Message to confirm all outstanding messages */
+
+                    if (unconfirmedReceivedIMessages > 0)
+                    {
+                        lastConfirmationTime = currentTime;
+                        unconfirmedReceivedIMessages = 0;
+                        timeoutT2Triggered = false;
+                        SendSMessage();
+
+                        DebugLog("Send STOPDT_CON");
+
                         state = MasterConnectionState.M_CON_STATE_STOPPED;
 
-                        DebugLog("Send STOPDT_CON\n");
-
-                        socketStream.Write(STOPDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
+                        try
+                        {
+                            socketStream.Write(STOPDT_CON_MSG, 0, STOPDT_CON_MSG.Length);
+                        }
+                        catch (IOException)
+                        {
+                            DebugLog("Failed to send STOPDT_CON");
+                            return false;
+                        }
                     }
                 }
-                else if (state == MasterConnectionState.M_CON_STATE_STOPPED)
+
+                // Check for TESTFR_CON message
+                else if ((buffer[2] & 0x83) == 0x83)
                 {
-                    DebugLog("S message sin stopped state -> active close\n");
-                    /* actively close connection */
-                    return false;
-                }    
+                    DebugLog("Recv TESTFR_CON");
+
+                    waitingForTestFRcon = false;
+
+                    ResetT3Timeout(currentTime);
+                }
+
+                // S-message
+                else if (buffer[2] == 0x01)
+                {
+                    int seqNo = (buffer[4] + buffer[5] * 0x100) / 2;
+
+                    DebugLog("Recv S(" + seqNo + ") (own sendcounter = " + sendCount + ")");
+
+                    if (CheckSequenceNumber(seqNo) == false)
+                    {
+                        DebugLog("S message - sequence number mismatch");
+                        return false;
+                    }
+
+                    //if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
+                    //{
+                    //    if (unconfirmedReceivedIMessages < 1)
+                    //    {
+                    //        state = MasterConnectionState.M_CON_STATE_STOPPED;
+
+                    //        DebugLog("Send STOPDT_CON\n");
+
+                    //        try
+                    //        {
+                    //            socketStream.Write(STOPDT_CON_MSG, 0, STOPDT_CON_MSG.Length);
+                    //        }
+                    //        catch (IOException ex)
+                    //        {
+                    //            DebugLog("Failed to send STOPDT_CON: " + ex.Message);
+                    //            return false;
+                    //        }
+                    //    }
+                    //}
+                    //else if (state == MasterConnectionState.M_CON_STATE_STOPPED)
+                    //{
+                    //    DebugLog("S message sin stopped state -> active close\n");
+                    //    /* actively close connection */
+                    //    return false;
+                    //}
+                }
+                else
+                {
+                    DebugLog("Unknown message - IGNORE");
+                    return true;
+                }
+
+                ResetT3Timeout(currentTime);
+
+                return true;
             }
             else
             {
-                DebugLog("Unknown message");
-                return true;
+                DebugLog("Invalid message (too small)");
+                return false;
             }
-
-            ResetT3Timeout(currentTime);
-
-            return true;
         }
 
         private bool handleTimeouts()
@@ -1580,7 +1625,6 @@ namespace lib60870.CS104
         public void Close()
         {
             running = false;
-            state = MasterConnectionState.M_CON_STATE_STOPPED;
         }
 
         public void ASDUReadyToSend()
