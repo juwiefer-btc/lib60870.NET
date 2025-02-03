@@ -7,6 +7,7 @@ using lib60870.CS101;
 using lib60870.CS104;
 using System.Security.Cryptography;
 using System.Runtime.Intrinsics.Arm;
+using System.Net;
 
 namespace tests
 {
@@ -196,30 +197,365 @@ namespace tests
             Assert.AreEqual(-300, scaledValue.Value);
         }
 
-        [Test ()]
-        public void TestSetpointCommandNormalized ()
+        [Test()]
+        public void TestReadCommand()
         {
-            SetpointCommandNormalized sc = new SetpointCommandNormalized (102, -0.5f,
-                new SetpointCommandQualifier (true, 0));
+            ReadCommand rc = new ReadCommand(101);
 
-            Assert.AreEqual (102, sc.ObjectAddress);
+            Assert.AreEqual(101, rc.ObjectAddress);
 
-            Assert.AreEqual (-0.5f, sc.NormalizedValue, 0.001f);
+            rc = new ReadCommand(102);
 
-            Assert.AreEqual (true, sc.QOS.Select);
-
-            sc = new SetpointCommandNormalized (102, 32767, new SetpointCommandQualifier (true, 0));
-
-            Assert.AreEqual (1.0, sc.NormalizedValue, 0.001f);
-
-            Assert.AreEqual (32767, sc.RawValue);
-
-            sc = new SetpointCommandNormalized (102, -32768, new SetpointCommandQualifier (true, 0));
-
-            Assert.AreEqual (-1.0, sc.NormalizedValue, 0.001f);
-
-            Assert.AreEqual (-32768, sc.RawValue);
+            Assert.AreEqual(102, rc.ObjectAddress);
         }
+
+        public void TestClockSynchronizationCommand()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            ClockSynchronizationCommand csc = new ClockSynchronizationCommand(101, time);
+
+            Assert.AreEqual(101, csc.ObjectAddress);
+            Assert.AreEqual(time.Year, csc.NewTime.Year);
+            Assert.AreEqual(time.Month, csc.NewTime.Month);
+            Assert.AreEqual(time.DayOfMonth, csc.NewTime.DayOfMonth);
+            Assert.AreEqual(time.Minute, csc.NewTime.Minute);
+            Assert.AreEqual(time.Second, csc.NewTime.Second);
+            Assert.AreEqual(time.Millisecond, csc.NewTime.Millisecond);
+
+            csc = new ClockSynchronizationCommand(102, time);
+
+            Assert.AreEqual(102, csc.ObjectAddress);
+            Assert.AreEqual(time.Year, csc.NewTime.Year);
+            Assert.AreEqual(time.Month, csc.NewTime.Month);
+            Assert.AreEqual(time.DayOfMonth, csc.NewTime.DayOfMonth);
+            Assert.AreEqual(time.Minute, csc.NewTime.Minute);
+            Assert.AreEqual(time.Second, csc.NewTime.Second);
+            Assert.AreEqual(time.Millisecond, csc.NewTime.Millisecond);
+
+        }
+
+        [Test()]
+        public void TestResetProcessCommand()
+        {
+            ResetProcessCommand rp = new ResetProcessCommand(101, 0);
+
+            Assert.AreEqual(101, rp.ObjectAddress);
+            Assert.AreEqual(0, rp.QRP);
+
+            rp = new ResetProcessCommand(102, 1);
+
+            Assert.AreEqual(102, rp.ObjectAddress);
+            Assert.AreEqual(1, rp.QRP);
+        }
+
+        [Test()]
+        public void TestDelayAcquisitionCommand()
+        {
+            CP16Time2a time = new CP16Time2a(24123);
+
+            DelayAcquisitionCommand da = new DelayAcquisitionCommand(101, time);
+
+            Assert.AreEqual(101, da.ObjectAddress);
+            Assert.AreEqual(24123, da.Delay.ElapsedTimeInMs);
+        }
+
+        [Test()]
+        public void TestBitString32()
+        {
+            Bitstring32 bs = new Bitstring32(101, 0xaaaa_aaaa, new QualityDescriptor());
+
+            Assert.AreEqual(101, bs.ObjectAddress);
+            Assert.AreEqual(0xaaaa_aaaa, bs.Value);
+
+            bs = new Bitstring32(101, 0xffff_0000, new QualityDescriptor());
+
+            Assert.AreEqual(101, bs.ObjectAddress);
+            Assert.AreEqual(0xffff_0000, bs.Value);
+        }
+
+        [Test()]
+        public void TestBitString32CommandWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            Bitstring32CommandWithCP56Time2a bsc = new Bitstring32CommandWithCP56Time2a(101, 0x00000000, time);
+
+            Assert.AreEqual(101, bsc.ObjectAddress);
+            Assert.AreEqual(0x00000000, bsc.Value);
+
+            bsc = new Bitstring32CommandWithCP56Time2a(101, 0x12345678, time);
+
+            Assert.AreEqual(101, bsc.ObjectAddress);
+            Assert.AreEqual(0x12345678, bsc.Value);
+            Assert.AreEqual(time.Year, bsc.Timestamp.Year);
+            Assert.AreEqual(time.Month, bsc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, bsc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, bsc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, bsc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, bsc.Timestamp.Millisecond);
+        }
+
+        [Test()]
+        public void TestEventOfProtectionEquipmentWithTime()
+        {
+            CP16Time2a elapsedTime = new CP16Time2a(24123);
+            CP24Time2a timestamp = new CP24Time2a(45, 23, 538);
+
+            EventOfProtectionEquipment e = new EventOfProtectionEquipment(101, new SingleEvent(), elapsedTime, timestamp);
+
+            Assert.AreEqual(101, e.ObjectAddress);
+            Assert.AreEqual(EventState.INDETERMINATE_0, e.Event);
+            Assert.AreEqual(24123, e.ElapsedTime.ElapsedTimeInMs);
+            Assert.AreEqual(45, e.Timestamp.Minute);
+            Assert.AreEqual(23, e.Timestamp.Second);
+            Assert.AreEqual(538, e.Timestamp.Millisecond);
+
+        }
+
+        [Test()]
+        public void TestInterrogationCommand()
+        {
+            InterrogationCommand ic = new InterrogationCommand(101, 20);
+
+            Assert.AreEqual(101, ic.ObjectAddress);
+            Assert.AreEqual(20, ic.QOI);
+
+            ic = new InterrogationCommand(101, 21);
+
+            Assert.AreEqual(101, ic.ObjectAddress);
+            Assert.AreEqual(21, ic.QOI);
+
+            ic = new InterrogationCommand(101, 24);
+
+            Assert.AreEqual(101, ic.ObjectAddress);
+            Assert.AreEqual(24, ic.QOI);
+        }
+
+        [Test()]
+        public void TestCounterInterrogationCommand()
+        {
+            CounterInterrogationCommand cic = new CounterInterrogationCommand(101, 20);
+
+            Assert.AreEqual(101, cic.ObjectAddress);
+            Assert.AreEqual(20, cic.QCC);
+
+            cic = new CounterInterrogationCommand(101, 21);
+
+            Assert.AreEqual(101, cic.ObjectAddress);
+            Assert.AreEqual(21, cic.QCC);
+
+            cic = new CounterInterrogationCommand(101, 24);
+
+            Assert.AreEqual(101, cic.ObjectAddress);
+            Assert.AreEqual(24, cic.QCC);
+
+        }
+
+
+        [Test()]
+        public void TestSetpointCommandShort()
+        {
+            SetpointCommandShort sc = new SetpointCommandShort(101, 10.5f, new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(10.5f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+            sc = new SetpointCommandShort(102, 1.0f, new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(1.0f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+            sc = new SetpointCommandShort(102, -1.0f, new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(-1.0f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+        }
+
+        [Test()]
+        public void TestSetpointCommandShortWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            SetpointCommandShortWithCP56Time2a sc = new SetpointCommandShortWithCP56Time2a(101, 10.5f, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(10.5f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandShortWithCP56Time2a(102, 1.0f, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(1.0f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandShortWithCP56Time2a(102, -1.0f, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(-1.0f, sc.Value, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+        }
+
+        [Test()]
+        public void TestSetpointCommandScaled()
+        {
+            SetpointCommandScaled sc = new SetpointCommandScaled(101, new ScaledValue(-32767), new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(-32767, sc.ScaledValue.Value);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+            sc = new SetpointCommandScaled(101, new ScaledValue(32767), new SetpointCommandQualifier (true, 0));
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(32767, sc.ScaledValue.ShortValue);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+            sc = new SetpointCommandScaled(101, new ScaledValue(-32768), new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(-32768, sc.ScaledValue.ShortValue);
+            Assert.AreEqual(true, sc.QOS.Select);
+        }
+
+        [Test()]
+        public void TestSetpointCommandScaledWithCP56Time2a()
+        {
+
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            SetpointCommandScaledWithCP56Time2a sc = new SetpointCommandScaledWithCP56Time2a(101, new ScaledValue(1), new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(1, sc.ScaledValue.Value);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandScaledWithCP56Time2a(101, new ScaledValue(32767), new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(32767, sc.ScaledValue.ShortValue);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandScaledWithCP56Time2a(101, new ScaledValue(-32768), new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(101, sc.ObjectAddress);
+            Assert.AreEqual(-32768, sc.ScaledValue.ShortValue);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+        }
+
+        [Test()]
+        public void TestSetpointCommandNormalized()
+        {
+            SetpointCommandNormalized sc = new SetpointCommandNormalized(102, -0.5f,
+                new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(-0.5f, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+
+            sc = new SetpointCommandNormalized(102, 32767, new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(1.0, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(32767, sc.RawValue);
+
+            sc = new SetpointCommandNormalized(102, -32768, new SetpointCommandQualifier(true, 0));
+
+            Assert.AreEqual(-1.0, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(-32768, sc.RawValue);
+        }
+
+        [Test()]
+        public void TestSetpointCommandNormalizedWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            SetpointCommandNormalizedWithCP56Time2a sc = new SetpointCommandNormalizedWithCP56Time2a(102, -0.5f, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(102, sc.ObjectAddress);
+            Assert.AreEqual(-0.5f, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(true, sc.QOS.Select);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandNormalizedWithCP56Time2a(102, 32767, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(1.0, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(32767, sc.RawValue);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+
+            sc = new SetpointCommandNormalizedWithCP56Time2a(102, -32768, new SetpointCommandQualifier(true, 0), time);
+
+            Assert.AreEqual(-1.0, sc.NormalizedValue, 0.001f);
+            Assert.AreEqual(-32768, sc.RawValue);
+            Assert.AreEqual(time.Year, sc.Timestamp.Year);
+            Assert.AreEqual(time.Month, sc.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, sc.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
+            Assert.AreEqual(time.Second, sc.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
+        }
+
+         
 
         [Test ()]
         public void TestStepPositionInformation ()
@@ -626,6 +962,69 @@ namespace tests
             server.Stop();
 
             connection.Close();
+        }
+
+        [Test()]
+        public void TestCS104ConnectionUseAfterClose()
+        {
+            ApplicationLayerParameters parameters = new ApplicationLayerParameters();
+            APCIParameters apciParameters = new APCIParameters();
+
+            Server server = new Server(apciParameters, parameters);
+
+            Assert.NotNull(server);
+
+            server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
+
+            server.SetLocalPort(20213);
+
+            server.Start();
+
+            Connection con = new Connection("127.0.0.1", 20213);
+
+            Assert.NotNull(con);
+
+            con.Connect();
+
+            con.Close();
+
+            con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+
+            server.Stop();
+
+        }
+
+        [Test()]
+        public void TestCS104ConnectionUseAfterServerCloseConnection()
+        {
+            ApplicationLayerParameters parameters = new ApplicationLayerParameters();
+            APCIParameters apciParameters = new APCIParameters();
+
+            Server server = new Server(apciParameters, parameters);
+
+            Assert.NotNull(server);
+
+            server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
+
+            server.SetLocalPort(20213);
+
+            server.Start();
+
+            Connection con = new Connection("127.0.0.1", 20213);
+
+            Assert.NotNull(con);
+
+            con.Connect();
+
+            server.Stop();
+
+            /* wait to allow client side to detect connection loss */
+            Thread.Sleep(500);
+
+            con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+
+            con.Close();
+
         }
 
         [Test ()]
@@ -1568,6 +1967,60 @@ namespace tests
             Assert.AreEqual(time.Millisecond, dc.Timestamp.Millisecond);
         }
 
+
+
+        [Test()]
+        public void TestStepCommandValue()
+        {
+            StepCommand scv = new StepCommand(10001, StepCommandValue.INVALID_0, false, 10);
+
+            Assert.AreEqual(10001, scv.ObjectAddress);
+            Assert.AreEqual(StepCommandValue.INVALID_0, scv.State);
+            Assert.AreEqual(false, scv.Select);
+            Assert.AreEqual(10, scv.QU);
+
+            scv = new StepCommand(10002, StepCommandValue.HIGHER, true, 3);
+
+            Assert.AreEqual(10002, scv.ObjectAddress);
+            Assert.AreEqual(StepCommandValue.HIGHER, scv.State);
+            Assert.AreEqual(false, scv.Select);
+            Assert.AreEqual(10, scv.QU);
+
+        }
+
+        [Test()]
+        public void TestStepCommandValueWithCP56Time2a()
+        {
+            DateTime dateTime = DateTime.UtcNow;
+
+            CP56Time2a time = new CP56Time2a(dateTime);
+
+            StepCommandWithCP56Time2a scv = new StepCommandWithCP56Time2a(10001, StepCommandValue.INVALID_0, false, 12, time);
+
+            Assert.AreEqual(10001, scv.ObjectAddress);
+            Assert.AreEqual(StepCommandValue.INVALID_0, scv.State);
+            Assert.AreEqual(false, scv.Select);
+            Assert.AreEqual(12, scv.QU);
+            Assert.AreEqual(time.Year, scv.Timestamp.Year);
+            Assert.AreEqual(time.Month, scv.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, scv.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, scv.Timestamp.Minute);
+            Assert.AreEqual(time.Second, scv.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, scv.Timestamp.Millisecond);
+
+            scv = new StepCommandWithCP56Time2a(10002, StepCommandValue.HIGHER, true, 3, time);
+
+            Assert.AreEqual(10002, scv.ObjectAddress);
+            Assert.AreEqual(StepCommandValue.HIGHER, scv.State);
+            Assert.AreEqual(false, scv.Select);
+            Assert.AreEqual(10, scv.QU);
+            Assert.AreEqual(time.Year, scv.Timestamp.Year);
+            Assert.AreEqual(time.Month, scv.Timestamp.Month);
+            Assert.AreEqual(time.DayOfMonth, scv.Timestamp.DayOfMonth);
+            Assert.AreEqual(time.Minute, scv.Timestamp.Minute);
+            Assert.AreEqual(time.Second, scv.Timestamp.Second);
+            Assert.AreEqual(time.Millisecond, scv.Timestamp.Millisecond);
+        }
 
 
         [Test ()]
