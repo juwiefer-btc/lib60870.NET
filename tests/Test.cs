@@ -734,6 +734,33 @@ namespace tests
         }
 
         [Test()]
+        public void TestAddUntilOverflow()
+        {
+
+            ASDU asdu = new ASDU(new ApplicationLayerParameters(), CauseOfTransmission.PERIODIC, false, false, 0, 1, false);
+
+            int i = 0;
+
+            for(i = 0; i < 60; i++)
+            {
+                SinglePointInformation sp = new SinglePointInformation(100 + i, true, new QualityDescriptor() );
+
+                bool added = asdu.AddInformationObject(sp);
+
+                Assert.IsTrue(added);
+
+                Assert.AreEqual(i + 1, asdu.NumberOfElements);
+            }
+
+            SinglePointInformation sp2 = new SinglePointInformation(100 + i, true, new QualityDescriptor());
+
+            bool addedIO = asdu.AddInformationObject(sp2);
+
+            Assert.IsFalse(addedIO);
+
+        }
+
+        [Test()]
         public void TestUnconfirmedStoppedState()
         {
             ApplicationLayerParameters parameters = new ApplicationLayerParameters();
