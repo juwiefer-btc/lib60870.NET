@@ -210,6 +210,19 @@ namespace tests
             Assert.AreEqual(102, rc.ObjectAddress);
         }
 
+        [Test()]
+        public void TestTestCommand()
+        {
+            TestCommand tc = new TestCommand();
+
+            Assert.IsTrue(tc.Valid);
+
+            tc = new TestCommand();
+
+            Assert.IsFalse(tc.Valid);
+
+        }
+
         public void TestClockSynchronizationCommand()
         {
             DateTime dateTime = DateTime.UtcNow;
@@ -3348,7 +3361,7 @@ namespace tests
             Assert.AreEqual(integratedTotalsOriginal.BCR.Invalid, integratedTotalsWithCP56Copy.BCR.Invalid);
             Assert.AreEqual(integratedTotalsOriginal.BCR.SequenceNumber, integratedTotalsWithCP56Copy.BCR.SequenceNumber);
         }
-
+        
         [Test()]
         public void TestSingleRedundancyGroup()
         {
