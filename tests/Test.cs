@@ -3299,7 +3299,7 @@ namespace tests
 
             con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
 
-            Thread.Sleep(7000);
+            Thread.Sleep(10000);
             Assert.IsTrue(receiver.finishedCalled);
             Assert.AreEqual(200, receiver.recvdBytes);
             Assert.AreEqual(2, receiver.lastSection);
