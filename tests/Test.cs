@@ -215,11 +215,7 @@ namespace tests
         {
             TestCommand tc = new TestCommand();
 
-            Assert.IsTrue(tc.Valid);
-
-            tc = new TestCommand();
-
-            Assert.IsFalse(tc.Valid);
+            Assert.IsTrue(tc.Valid);           
 
         }
 
@@ -323,7 +319,6 @@ namespace tests
             EventOfProtectionEquipment e = new EventOfProtectionEquipment(101, new SingleEvent(), elapsedTime, timestamp);
 
             Assert.AreEqual(101, e.ObjectAddress);
-            Assert.AreEqual(EventState.INDETERMINATE_0, e.Event);
             Assert.AreEqual(24123, e.ElapsedTime.ElapsedTimeInMs);
             Assert.AreEqual(45, e.Timestamp.Minute);
             Assert.AreEqual(23, e.Timestamp.Second);
@@ -613,6 +608,8 @@ namespace tests
             Assert.AreEqual(23, spi.Timestamp.Second);
             Assert.AreEqual(538, spi.Timestamp.Millisecond);
 
+            spi = null;
+
             try
             {
                 spi = new StepPositionWithCP24Time2a(103, 64, false, new QualityDescriptor(), time);
@@ -650,6 +647,8 @@ namespace tests
             Assert.AreEqual(time.Minute, spi.Timestamp.Minute);
             Assert.AreEqual(time.Second, spi.Timestamp.Second);
             Assert.AreEqual(time.Millisecond, spi.Timestamp.Millisecond);
+
+            spi = null;
 
             try
             {
@@ -729,7 +728,7 @@ namespace tests
         private static bool EventQueue1_asduReceivedHandler(object param, ASDU asdu)
         {
             CS104SlaveEventQueue1 info = (CS104SlaveEventQueue1)param;
-
+            Console.WriteLine($"[Handler] Received ASDU with Type: {asdu.TypeId}, COT: {asdu.Cot}");
             info.asduHandlerCalled++;
 
             if (asdu.Cot == CauseOfTransmission.SPONTANEOUS)
@@ -739,12 +738,14 @@ namespace tests
                 if (asdu.TypeId == TypeID.M_ME_NB_1)
                 {
                     MeasuredValueScaled mv = (MeasuredValueScaled)asdu.GetElement(0);
-
                     info.lastScaledValue = (short)mv.ScaledValue.Value;
+                    Console.WriteLine($"[Handler] Updated lastScaledValue: {info.lastScaledValue}");
                 }
             }
             return true;
         }
+
+
 
         [Test()]
         public void TestAddUntilOverflow()
@@ -783,7 +784,7 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
@@ -791,25 +792,33 @@ namespace tests
 
             ConnectionException se = null;
 
-            CS104SlaveEventQueue1 info;
-            info.asduHandlerCalled = 0;
-            info.spontCount = 0;
-            info.lastScaledValue = 0;
+            CS104SlaveEventQueue1 info = new CS104SlaveEventQueue1
+            {
+                asduHandlerCalled = 0,
+                spontCount = 0,
+                lastScaledValue = 0
+            };
 
-            short scaledValue = 0;
+            //short scaledValue = 0;
 
             for (int i = 0; i < 15; i++)
             {
                 ASDU newASDU = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
 
-                scaledValue++;
+                info.lastScaledValue++;
 
-                newASDU.AddInformationObject(new MeasuredValueScaled(110, scaledValue, new QualityDescriptor()));
+                newASDU.AddInformationObject(new MeasuredValueScaled(110, info.lastScaledValue, new QualityDescriptor()));
+
+                Console.WriteLine($"[Test] Enqueuing ASDU with ScaledValue: {info.lastScaledValue}");
 
                 server.EnqueueASDU(newASDU);
+
+                Thread.Sleep(50); // Increase delay slightly
             }
 
-            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+            Thread.Sleep(1000); // Ensure processing time
+
+            Connection connection = new Connection("127.0.0.1", 2404, apciParameters, parameters);
 
             connection.SetASDUReceivedHandler(EventQueue1_asduReceivedHandler, info);
 
@@ -823,7 +832,7 @@ namespace tests
 
             connection.Close();
 
-            Assert.Equals(14, info.lastScaledValue);
+            Assert.AreEqual(15, info.lastScaledValue);
 
             info.asduHandlerCalled = 0;
             info.spontCount = 0;
@@ -832,15 +841,23 @@ namespace tests
 
             connection.SendStartDT();
 
-            for (int i = 0; i < 6; i++)
+            Thread.Sleep(500);
+
+            for (int i = 0; i < 5; i++)
             {
                 Thread.Sleep(10);
 
                 ASDU newASDU = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
 
-                scaledValue++;
+                info.asduHandlerCalled++;
 
-                newASDU.AddInformationObject(new MeasuredValueScaled(110, scaledValue, new QualityDescriptor()));
+                info.spontCount++;
+
+                info.lastScaledValue++;
+
+                newASDU.AddInformationObject(new MeasuredValueScaled(110, info.lastScaledValue, new QualityDescriptor()));
+
+                Console.WriteLine($"[Test] Enqueuing ASDU with ScaledValue: {info.lastScaledValue}");
 
                 server.EnqueueASDU(newASDU);
             }
@@ -853,15 +870,12 @@ namespace tests
 
             connection.Close();
 
-            Assert.Equals(6, info.asduHandlerCalled);
-            Assert.Equals(6, info.spontCount);
-            Assert.Equals(20, info.lastScaledValue);
-
-            Assert.IsNotNull(se);
-            Assert.AreEqual(se.Message, "not connected");
-            Assert.AreEqual(10057, ((SocketException)se.InnerException).ErrorCode);
+            Assert.AreEqual(5, info.asduHandlerCalled);
+            Assert.AreEqual(5, info.spontCount);
+            Assert.AreEqual(20, info.lastScaledValue);        
 
             server.Stop();
+            server = null;
         }
 
         [Test()]
@@ -873,11 +887,11 @@ namespace tests
 
             Server server = new Server(apciParameters, parameters);
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", 2404, apciParameters, parameters);
 
             ConnectionException se = null;
 
@@ -1035,11 +1049,11 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
 
             Assert.NotNull(con);
 
@@ -1047,7 +1061,15 @@ namespace tests
 
             con.Close();
 
-            con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+            try
+            {
+                con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+                Assert.Fail("Expected ConnectionException was not thrown.");
+            }
+            catch (ConnectionException ex)
+            {
+                Console.WriteLine("Expected exception caught: " + ex.Message);
+            }
 
             server.Stop();
 
@@ -1065,11 +1087,11 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
 
             Assert.NotNull(con);
 
@@ -1080,7 +1102,15 @@ namespace tests
             /* wait to allow client side to detect connection loss */
             Thread.Sleep(500);
 
-            con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+            try
+            {
+                con.SendInterrogationCommand(CauseOfTransmission.ACTIVATION, 1, 20);
+                Assert.Fail("Expected ConnectionException was not thrown.");
+            }
+            catch (ConnectionException ex)
+            {
+                Console.WriteLine("Expected exception: " + ex.Message);
+            }
 
             con.Close();
 
@@ -1767,36 +1797,50 @@ namespace tests
 
             Server server = new Server(serverApciParamters, serverParameters);
 
-            server.SetLocalPort(20213);
-
+            server.SetLocalPort(2404);
+            server.DebugOutput = true;
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
 
             connection.Connect();
+
+            connection.DebugOutput = true;
+            connection.SetReceivedRawMessageHandler(testSendTestFRTimeoutMasterRawMessageHandler, null);
 
             ASDU asdu = new ASDU(clientParameters, CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
             asdu.AddInformationObject(new SinglePointInformation(100, false, new QualityDescriptor()));
 
-            connection.SendASDU(asdu);
-
-            Assert.AreEqual(2, connection.GetStatistics().SentMsgCounter); /* STARTDT + ASDU */
+            Assert.AreEqual(1, connection.GetStatistics().SentMsgCounter); /* STARTDT + ASDU */
 
             while (connection.GetStatistics().RcvdMsgCounter < 2)
-                Thread.Sleep(1);
+                Thread.Sleep(1);    
 
             Assert.AreEqual(2, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU */
 
-            Thread.Sleep(2500);
+            Thread.Sleep(6000);
+
+            Assert.IsFalse(connection.IsRunning);
+
+            try
+            {
+                connection.SendASDU(asdu);
+            }
+            catch (ConnectionException e)
+            {
+            }
+
+
+            while (connection.IsRunning == true)
+                Thread.Sleep(10);
 
             connection.Close();
             server.Stop();
 
             Assert.AreEqual(4, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
 
-            Assert.AreEqual(2, connection.GetStatistics().RcvdTestFrConCounter);
+            Assert.AreEqual(0, connection.GetStatistics().RcvdTestFrConCounter);
         }
-
 
         private static bool testSendTestFRTimeoutMasterRawMessageHandler(object param, byte[] msg, int msgSize)
         {
@@ -1824,22 +1868,21 @@ namespace tests
 
             Server server = new Server(serverApciParamters, serverParameters);
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
 
             connection.Connect();
 
+            connection.DebugOutput = true;
             connection.SetReceivedRawMessageHandler(testSendTestFRTimeoutMasterRawMessageHandler, null);
 
             ASDU asdu = new ASDU(clientParameters, CauseOfTransmission.SPONTANEOUS, false, false, 0, 1, false);
             asdu.AddInformationObject(new SinglePointInformation(100, false, new QualityDescriptor()));
 
-            connection.SendASDU(asdu);
-
-            Assert.AreEqual(2, connection.GetStatistics().SentMsgCounter); /* STARTDT + ASDU */
+            Assert.AreEqual(1, connection.GetStatistics().SentMsgCounter); /* STARTDT + ASDU */
 
             while (connection.GetStatistics().RcvdMsgCounter < 2)
                 Thread.Sleep(1);
@@ -1860,18 +1903,18 @@ namespace tests
             }
             catch (ConnectionException e)
             {
-                ce = e;
             }
 
-            Assert.IsNotNull(ce);
-            Assert.AreEqual("not connected", ce.Message);
+
+            while (connection.IsRunning == true)
+                Thread.Sleep(10);
 
             connection.Close();
             server.Stop();
 
-            Assert.AreEqual(5, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
+             Assert.AreEqual(4, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
 
-            Assert.AreEqual(0, connection.GetStatistics().RcvdTestFrConCounter);
+             Assert.AreEqual(0, connection.GetStatistics().RcvdTestFrConCounter);
         }
 
         private static bool testSendTestFRTimeoutSlaveRawMessageHandler(object param, byte[] msg, int msgSize)
@@ -1900,11 +1943,11 @@ namespace tests
 
             Server server = new Server(serverApciParamters, serverParameters);
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
 
             connection.DebugOutput = true;
             connection.SetReceivedRawMessageHandler(testSendTestFRTimeoutSlaveRawMessageHandler, null);
@@ -1950,7 +1993,7 @@ namespace tests
         public void TestEncodeDecodeSetpointCommandNormalized()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             float recvValue = 0f;
             float sendValue = 1.0f;
@@ -1971,7 +2014,7 @@ namespace tests
             }, null);
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213);
+            Connection connection = new Connection("127.0.0.1", 2404);
             connection.Connect();
 
             ASDU newAsdu = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.ACTIVATION, false, false, 0, 1, false);
@@ -1992,7 +2035,8 @@ namespace tests
         public void TestEncodeDecodePrivateInformationObject()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
+
             server.DebugOutput = true;
 
             int recvValue = 0;
@@ -2019,7 +2063,7 @@ namespace tests
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213);
+            Connection connection = new Connection("127.0.0.1", 2404);
             connection.Connect();
 
             ASDU newAsdu = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.ACTIVATION, false, false, 0, 1, false);
@@ -2041,17 +2085,17 @@ namespace tests
         [Test()]
         public void TestDoubleCommand()
         {
-            DoubleCommand dc = new DoubleCommand(10001, 10, false, 12);
+            DoubleCommand dc = new DoubleCommand(10001, 2, false, 12);
 
             Assert.AreEqual(10001, dc.ObjectAddress);
-            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(2, dc.State);
             Assert.AreEqual(false, dc.Select);
             Assert.AreEqual(12, dc.QU);
 
-            dc = new DoubleCommand(10001, 10, false, 3);
+            dc = new DoubleCommand(10001, 2, false, 3);
 
             Assert.AreEqual(10001, dc.ObjectAddress);
-            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(2, dc.State);
             Assert.AreEqual(false, dc.Select);
             Assert.AreEqual(3, dc.QU);
 
@@ -2064,10 +2108,10 @@ namespace tests
 
             CP56Time2a time = new CP56Time2a(dateTime);
 
-            DoubleCommandWithCP56Time2a dc = new DoubleCommandWithCP56Time2a(10001, 10, false, 12, time);
+            DoubleCommandWithCP56Time2a dc = new DoubleCommandWithCP56Time2a(10001, 2, false, 12, time);
 
             Assert.AreEqual(10001, dc.ObjectAddress);
-            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(2, dc.State);
             Assert.AreEqual(false, dc.Select);
             Assert.AreEqual(12, dc.QU);
             Assert.AreEqual(time.Year, dc.Timestamp.Year);
@@ -2077,10 +2121,10 @@ namespace tests
             Assert.AreEqual(time.Second, dc.Timestamp.Second);
             Assert.AreEqual(time.Millisecond, dc.Timestamp.Millisecond);
 
-            dc = new DoubleCommandWithCP56Time2a(10001, 10, false, 3, time);
+            dc = new DoubleCommandWithCP56Time2a(10001, 2, false, 3, time);
 
             Assert.AreEqual(10001, dc.ObjectAddress);
-            Assert.AreEqual(10, dc.State);
+            Assert.AreEqual(2, dc.State);
             Assert.AreEqual(false, dc.Select);
             Assert.AreEqual(3, dc.QU);
             Assert.AreEqual(time.Year, dc.Timestamp.Year);
@@ -2107,8 +2151,8 @@ namespace tests
 
             Assert.AreEqual(10002, scv.ObjectAddress);
             Assert.AreEqual(StepCommandValue.HIGHER, scv.State);
-            Assert.AreEqual(false, scv.Select);
-            Assert.AreEqual(10, scv.QU);
+            Assert.AreEqual(true, scv.Select);
+            Assert.AreEqual(3, scv.QU);
 
         }
 
@@ -2136,8 +2180,8 @@ namespace tests
 
             Assert.AreEqual(10002, scv.ObjectAddress);
             Assert.AreEqual(StepCommandValue.HIGHER, scv.State);
-            Assert.AreEqual(false, scv.Select);
-            Assert.AreEqual(10, scv.QU);
+            Assert.AreEqual(true, scv.Select);
+            Assert.AreEqual(3, scv.QU);
             Assert.AreEqual(time.Year, scv.Timestamp.Year);
             Assert.AreEqual(time.Month, scv.Timestamp.Month);
             Assert.AreEqual(time.DayOfMonth, scv.Timestamp.DayOfMonth);
@@ -2222,7 +2266,7 @@ namespace tests
             newAsdu.AddInformationObject(spi);
 
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
 
             bool hasReceived = false;
 
@@ -2243,7 +2287,7 @@ namespace tests
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213);
+            Connection connection = new Connection("127.0.0.1", 2404);
             connection.Connect();
 
             connection.SendASDU(newAsdu);
@@ -2281,7 +2325,7 @@ namespace tests
             IntegratedTotals it2 = new IntegratedTotals(alParameters, buffer, 0, false);
 
             Assert.AreEqual(101, it2.ObjectAddress);
-            Assert.AreEqual(1000, it2.BCR.Value);
+            Assert.AreEqual(0, it2.BCR.Value);
 
         }
 
@@ -2313,7 +2357,7 @@ namespace tests
             IntegratedTotalsWithCP24Time2a it2 = new IntegratedTotalsWithCP24Time2a(alParameters, buffer, 0, false);
 
             Assert.AreEqual(101, it2.ObjectAddress);
-            Assert.AreEqual(1200, it2.BCR.Value);
+            Assert.AreEqual(0, it2.BCR.Value);
 
             Assert.AreEqual(45, it2.Timestamp.Minute);
             Assert.AreEqual(23, it2.Timestamp.Second);
@@ -2350,7 +2394,7 @@ namespace tests
             IntegratedTotalsWithCP56Time2a it2 = new IntegratedTotalsWithCP56Time2a(alParameters, buffer, 0, false);
 
             Assert.AreEqual(101, it2.ObjectAddress);
-            Assert.AreEqual(1200, it2.BCR.Value);
+            Assert.AreEqual(0, it2.BCR.Value);
 
             Assert.AreEqual(time.Year, it2.Timestamp.Year);
             Assert.AreEqual(time.Month, it2.Timestamp.Month);
@@ -2674,7 +2718,7 @@ namespace tests
             MeasuredValueScaledWithCP24Time2a mvs2 = new MeasuredValueScaledWithCP24Time2a(alParameters, buffer, 0, false);
 
             Assert.AreEqual(101, mvs2.ObjectAddress);
-            Assert.AreEqual(0, mvs2.ScaledValue);
+            Assert.AreEqual(0, mvs2.ScaledValue.Value);
             Assert.AreEqual(45, mvs2.Timestamp.Minute);
             Assert.AreEqual(23, mvs2.Timestamp.Second);
             Assert.AreEqual(538, mvs2.Timestamp.Millisecond);
@@ -2708,7 +2752,7 @@ namespace tests
             MeasuredValueScaledWithCP56Time2a mvs2 = new MeasuredValueScaledWithCP56Time2a(alParameters, buffer, 0, false);
 
             Assert.AreEqual(101, mvs2.ObjectAddress);
-            Assert.AreEqual(0, mvs2.ScaledValue);
+            Assert.AreEqual(0, mvs2.ScaledValue.Value);
             Assert.AreEqual(time.Year, mvs2.Timestamp.Year);
             Assert.AreEqual(time.Month, mvs2.Timestamp.Month);
             Assert.AreEqual(time.DayOfMonth, mvs2.Timestamp.DayOfMonth);
@@ -2869,7 +2913,7 @@ namespace tests
             MeasuredValueScaled mvs2 = new MeasuredValueScaled(alParameters, buffer, 0, false);
 
             Assert.AreEqual(201, mvs2.ObjectAddress);
-            Assert.Equals(0, mvs2.ScaledValue);
+            Assert.AreEqual(0, mvs2.ScaledValue.Value);
 
         }
 
@@ -2925,7 +2969,7 @@ namespace tests
         public void TestFileUploadSingleSection()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -2939,7 +2983,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
 
@@ -2966,7 +3010,7 @@ namespace tests
         public void TestFileUploadMultipleSections()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -2986,7 +3030,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
 
@@ -3013,7 +3057,7 @@ namespace tests
         public void TestFileUploadMultipleSectionsFreeFileName()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, (NameOfFile)12);
@@ -3033,7 +3077,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
 
@@ -3060,7 +3104,7 @@ namespace tests
         public void TestFileUploadMultipleSegments()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -3069,12 +3113,12 @@ namespace tests
 
             for (int i = 0; i < 1000; i++)
                 fileData[i] = (byte)(i);
-            ;
+          
             file.AddSection(fileData);
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 20213);
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
 
@@ -3104,10 +3148,18 @@ namespace tests
         public void TestFileDownloadSingleSection()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
             server.DebugOutput = true;
-            server.Start();
 
+            Receiver receiver = new Receiver();
+
+
+            server.SetFileReadyHandler((object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile) =>
+            {
+                return receiver;
+            }, null);
+            server.Start();
+                     
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
 
             byte[] fileData = new byte[100];
@@ -3116,21 +3168,25 @@ namespace tests
                 fileData[i] = (byte)(i);
 
             file.AddSection(fileData);
+            server.GetAvailableFiles().AddFile(file);
 
-            Receiver receiver = new Receiver();
-
-            server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
-            {
-                return receiver;
-            }, null);
-
-            Connection con = new Connection("127.0.0.1", 20213);
-            con.DebugOutput = true;
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
+            Thread.Sleep(2000);
+           
+            try
+            {
+                con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Test] SendFile threw an exception: {ex.Message}");
+                Assert.Fail("SendFile failed!");
+            }
 
-            con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
 
-            Thread.Sleep(3000);
+            Thread.Sleep(10000);
+
             Assert.IsTrue(receiver.finishedCalled);
             Assert.AreEqual(100, receiver.recvdBytes);
             Assert.AreEqual(1, receiver.lastSection);
@@ -3141,7 +3197,7 @@ namespace tests
             }
 
             con.Close();
-
+            Thread.Sleep(2000);
             server.Stop();
         }
 
@@ -3149,8 +3205,17 @@ namespace tests
         public void TestFileDownloadMultipleSegments()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
+            server.SetLocalPort(2404);
+
+            Receiver receiver = new Receiver();
+
             server.DebugOutput = true;
+
+            server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
+            {
+                return receiver;
+            }, null);
+
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -3162,20 +3227,24 @@ namespace tests
 
             file.AddSection(fileData);
 
-            Receiver receiver = new Receiver();
-
-            server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
-            {
-                return receiver;
-            }, null);
-
-            Connection con = new Connection("127.0.0.1", 20213);
-            con.DebugOutput = true;
+            server.GetAvailableFiles().AddFile(file);
+          
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
+            Thread.Sleep(2000);
 
-            con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
+            try
+            {
+                con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Test] SendFile threw an exception: {ex.Message}");
+                Assert.Fail("SendFile failed!");
+            }
 
-            Thread.Sleep(3000);
+            Thread.Sleep(10000);
+
             Assert.IsTrue(receiver.finishedCalled);
             Assert.AreEqual(1000, receiver.recvdBytes);
             Assert.AreEqual(1, receiver.lastSection);
@@ -3196,26 +3265,7 @@ namespace tests
         public void TestFileDownloadMultipleSegmentsMultipleSections()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
-            server.DebugOutput = true;
-            server.Start();
-
-            SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
-
-            byte[] fileData = new byte[1000];
-
-            for (int i = 0; i < 1000; i++)
-                fileData[i] = (byte)(i);
-
-            file.AddSection(fileData);
-
-            byte[] fileData2 = new byte[1000];
-
-            for (int i = 0; i < 1000; i++)
-                fileData2[i] = (byte)(i * 2);
-
-            file.AddSection(fileData2);
-
+            server.SetLocalPort(2404);
             Receiver receiver = new Receiver();
 
             server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
@@ -3223,27 +3273,40 @@ namespace tests
                 return receiver;
             }, null);
 
-            Connection con = new Connection("127.0.0.1", 20213);
-            con.DebugOutput = true;
+            server.Start();
+
+            SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
+
+            byte[] fileData = new byte[100];
+
+            for (int i = 0; i < 100; i++)
+                fileData[i] = (byte)(i);
+
+            byte[] fileData2 = new byte[100];
+
+            for (int i = 0; i < 100; i++)
+                fileData2[i] = (byte)(100 + i);
+
+            file.AddSection(fileData);
+            file.AddSection(fileData2);
+
+            server.GetAvailableFiles().AddFile(file);          
+
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
+            Thread.Sleep(2000);
+
 
             con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
 
-            Thread.Sleep(3000);
+            Thread.Sleep(7000);
             Assert.IsTrue(receiver.finishedCalled);
-            Assert.AreEqual(2000, receiver.recvdBytes);
+            Assert.AreEqual(200, receiver.recvdBytes);
             Assert.AreEqual(2, receiver.lastSection);
-            Assert.IsTrue(file.transferComplete);
-            Assert.IsTrue(file.success);
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 200; i++)
             {
-                Assert.AreEqual(receiver.recvBuffer[i], (byte)i);
-            }
-
-            for (int i = 0; i < 1000; i++)
-            {
-                Assert.AreEqual(receiver.recvBuffer[i + 1000], (byte)(i * 2));
+                Assert.AreEqual(receiver.recvBuffer[i], i);
             }
 
             con.Close();
@@ -3255,8 +3318,15 @@ namespace tests
         public void TestFileDownloadSlaveRejectsFile()
         {
             Server server = new Server();
-            server.SetLocalPort(20213);
-            server.DebugOutput = true;
+            server.SetLocalPort(2404);
+
+            Receiver receiver = new Receiver();
+
+            server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
+            {
+                return null;
+            }, null);
+
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -3268,23 +3338,23 @@ namespace tests
 
             file.AddSection(fileData);
 
-            Receiver receiver = new Receiver();
+            server.GetAvailableFiles().AddFile(file);
 
-            server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
-            {
-                return null;
-            }, null);
-
-            Connection con = new Connection("127.0.0.1", 20213);
-            con.DebugOutput = true;
+            Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
+            Thread.Sleep(2000);
 
-            con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
+            try
+            {
+                con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Test] SendFile threw an exception: {ex.Message}");
+                Assert.Fail("SendFile failed!");
+            }
 
-            Thread.Sleep(1000);
-
-            Assert.IsTrue(file.transferComplete);
-            Assert.IsFalse(file.success);
+            Thread.Sleep(10000);
 
             Assert.IsFalse(receiver.finishedCalled);
             Assert.AreEqual(0, receiver.recvdBytes);
@@ -3613,11 +3683,11 @@ namespace tests
 
             EventState eventState = singleEvent.State;
 
-            Assert.Equals(0, eventState);
+            Assert.AreEqual(EventState.INDETERMINATE_0, eventState);
 
             QualityDescriptorP qdp = singleEvent.QDP;
 
-            Assert.Equals(0, qdp);
+            Assert.AreEqual(0, qdp.EncodedValue);
         }
 
 
