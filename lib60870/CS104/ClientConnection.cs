@@ -35,6 +35,12 @@ using System.Collections.Concurrent;
 
 namespace lib60870.CS104
 {
+    public enum MasterConnectionState
+    {
+        M_CON_STATE_STOPPED = 0, /* only U frames allowed */
+        M_CON_STATE_STARTED = 1, /* U, I, S frames allowed */
+        M_CON_STATE_UNCONFIRMED_STOPPED = 2 /* only U, S frames allowed */
+    }
     /// <summary>
     /// Represents a client (master) connection
     /// </summary>
@@ -63,13 +69,7 @@ namespace lib60870.CS104
 
         static byte[] TESTFR_ACT_MSG = new byte[] { 0x68, 0x04, 0x43, 0x00, 0x00, 0x00 };
 
-        public enum MasterConnectionState
-        {
-            M_CON_STATE_STOPPED = 0,
-            M_CON_STATE_STARTED = 1,
-            M_CON_STATE_UNCONFIRMED_STOPPED = 2
-        }
-
+       
         private MasterConnectionState state;
         private int sendCount = 0;
         private int receiveCount = 0;
@@ -186,6 +186,7 @@ namespace lib60870.CS104
 
         internal ClientConnection(Socket socket, TlsSecurityInformation tlsSecInfo, APCIParameters apciParameters, ApplicationLayerParameters parameters, Server server, ASDUQueue asduQueue, bool debugOutput)
         {
+            state = MasterConnectionState.M_CON_STATE_STOPPED;
             connectionsCounter++;
             connectionID = connectionsCounter;
 
@@ -308,6 +309,8 @@ namespace lib60870.CS104
                 }
             }
         }
+
+        public MasterConnectionState State { get => state; set => state = value; }
 
         private Socket socket;
         private Stream socketStream;
@@ -1136,11 +1139,11 @@ namespace lib60870.CS104
                         return false;
                     }
 
-                    //if (state != MasterConnectionState.M_CON_STATE_STARTED)
-                    //{
-                    //    DebugLog("Received I message while connection not active -> close connection");
-                    //    return false;
-                    //}
+                    if (state != MasterConnectionState.M_CON_STATE_STARTED)
+                    {
+                        DebugLog("Received I message while connection not active -> close connection");
+                        return false;
+                    }
 
                     if (timeoutT2Triggered == false)
                     {
@@ -1277,31 +1280,31 @@ namespace lib60870.CS104
                         return false;
                     }
 
-                    //if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
-                    //{
-                    //    if (unconfirmedReceivedIMessages < 1)
-                    //    {
-                    //        state = MasterConnectionState.M_CON_STATE_STOPPED;
+                    if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
+                    {
+                        if (unconfirmedReceivedIMessages < 1)
+                        {
+                            state = MasterConnectionState.M_CON_STATE_STOPPED;
 
-                    //        DebugLog("Send STOPDT_CON\n");
+                            DebugLog("Send STOPDT_CON\n");
 
-                    //        try
-                    //        {
-                    //            socketStream.Write(STOPDT_CON_MSG, 0, STOPDT_CON_MSG.Length);
-                    //        }
-                    //        catch (IOException ex)
-                    //        {
-                    //            DebugLog("Failed to send STOPDT_CON: " + ex.Message);
-                    //            return false;
-                    //        }
-                    //    }
-                    //}
-                    //else if (state == MasterConnectionState.M_CON_STATE_STOPPED)
-                    //{
-                    //    DebugLog("S message sin stopped state -> active close\n");
-                    //    /* actively close connection */
-                    //    return false;
-                    //}
+                            try
+                            {
+                                socketStream.Write(STOPDT_CON_MSG, 0, STOPDT_CON_MSG.Length);
+                            }
+                            catch (IOException ex)
+                            {
+                                DebugLog("Failed to send STOPDT_CON: " + ex.Message);
+                                return false;
+                            }
+                        }
+                    }
+                    else if (state == MasterConnectionState.M_CON_STATE_STOPPED)
+                    {
+                        DebugLog("S message sin stopped state -> active close\n");
+                        /* actively close connection */
+                        return false;
+                    }
                 }
                 else
                 {
@@ -1625,6 +1628,7 @@ namespace lib60870.CS104
         public void Close()
         {
             running = false;
+            state = MasterConnectionState.M_CON_STATE_STOPPED;
         }
 
         public void ASDUReadyToSend()

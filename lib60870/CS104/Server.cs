@@ -1076,9 +1076,12 @@ namespace lib60870.CS104
         }
 
         internal void CallConnectionEventHandler(ClientConnection connection, ClientConnectionEvent e)
-        {         
+        {
+            if (connection.State == MasterConnectionState.M_CON_STATE_STARTED)
+            {
                 if (connectionEventHandler != null)
-                    connectionEventHandler(connectionEventHandlerParameter, connection, e);            
+                    connectionEventHandler(connectionEventHandlerParameter, connection, e);
+            }                        
         }
 
         internal void Activated(ClientConnection activeConnection)
@@ -1093,11 +1096,17 @@ namespace lib60870.CS104
                 }
 
             }
+
+            activeConnection.State = MasterConnectionState.M_CON_STATE_STARTED;
+
         }
 
         internal void Deactivated(ClientConnection activeConnection)
         {
+
             CallConnectionEventHandler(activeConnection, ClientConnectionEvent.INACTIVE);
+
+            activeConnection.State = MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED;
         }
 
         public override int FileTimeout {
