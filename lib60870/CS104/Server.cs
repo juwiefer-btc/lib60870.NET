@@ -233,7 +233,7 @@ namespace lib60870.CS104
             DebugLog("Queue contains " + NumberOfAsduInQueue + " messages (oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry + ")");
           
         }
-
+      
         public void LockASDUQueue()
         {
             Monitor.Enter(enqueuedASDUs);
@@ -243,6 +243,65 @@ namespace lib60870.CS104
         {
             Monitor.Exit(enqueuedASDUs);
         }
+
+        public bool MessageQueue_hasUnconfirmedIMessages(ASDUQueue queue)
+        {
+            bool retVal = false;
+
+            if (NumberOfAsduInQueue != 0)
+            {
+                int currentIndex = oldestQueueEntry;
+
+                while (currentIndex > 0)
+                {
+                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
+                    {
+                        retVal = true;
+                        break;
+                    }
+
+                    // break if we reached the latest entry
+                    if (currentIndex == latestQueueEntry)
+                        break;
+
+                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
+                        break;
+
+                    currentIndex = (currentIndex + 1) % maxQueueSize;                   
+                }
+            }
+            return retVal;
+        }
+
+        public bool HighPriorityASDUQueue_hasUnconfirmedIMessages(Queue<BufferFrame> queue)
+        {
+            bool retVal = false;
+
+            if (NumberOfAsduInQueue != 0)
+            {
+                int currentIndex = oldestQueueEntry;
+
+                while (currentIndex > 0)
+                {
+                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
+                    {
+                        retVal = true;
+                        break;
+                    }
+
+                    // break if we reached the latest entry
+                    if (currentIndex == latestQueueEntry)
+                        break;
+
+                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
+                        break;
+
+                    currentIndex = (currentIndex + 1) % maxQueueSize;
+                }
+            }            
+                return retVal;
+        }
+
 
         internal BufferFrame GetNextWaitingASDU(out long timestamp, out int index)
         {
@@ -258,14 +317,15 @@ namespace lib60870.CS104
 
                 while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
                 {
+                    // break if we reached the latest entry
+                    if (currentIndex == latestQueueEntry)
+                        break;
+
                     if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
                         break;
 
                     currentIndex = (currentIndex + 1) % maxQueueSize;
-
-                    // break if we reached the oldest entry again
-                    if (currentIndex == oldestQueueEntry)
-                        break;
+                    
                 }
 
                 if (enqueuedASDUs[currentIndex].state == QueueEntryState.WAITING_FOR_TRANSMISSION)

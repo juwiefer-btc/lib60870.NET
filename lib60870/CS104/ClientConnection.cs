@@ -461,6 +461,22 @@ namespace lib60870.CS104
             return sendCount;
         }
 
+        public bool MasterConnection_hasUnconfirmedMessages()
+        {
+            bool retVal = false;
+
+            if(asduQueue != null)
+            {
+                if (asduQueue.MessageQueue_hasUnconfirmedIMessages(asduQueue))
+                    return true;
+
+                if (asduQueue.HighPriorityASDUQueue_hasUnconfirmedIMessages(waitingASDUsHighPrio))              
+                    return true;               
+            }
+
+            return retVal;
+        }
+
         private bool isSentBufferFull()
         {
 
@@ -1240,7 +1256,14 @@ namespace lib60870.CS104
                         unconfirmedReceivedIMessages = 0;
                         timeoutT2Triggered = false;
                         SendSMessage();
+                    }
 
+                    if(MasterConnection_hasUnconfirmedMessages())
+                    {
+                        DebugLog("CS104 SLAVE: Unconfirmed messages after STOPDT_ACT -> pending unconfirmed stopped state\n");
+                    }
+                    else
+                    {
                         DebugLog("Send STOPDT_CON");
 
                         state = MasterConnectionState.M_CON_STATE_STOPPED;
@@ -1254,7 +1277,7 @@ namespace lib60870.CS104
                             DebugLog("Failed to send STOPDT_CON");
                             return false;
                         }
-                    }
+                    }                   
                 }
 
                 // Check for TESTFR_CON message
@@ -1282,7 +1305,7 @@ namespace lib60870.CS104
 
                     if (state == MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED)
                     {
-                        if (unconfirmedReceivedIMessages < 1)
+                        if (MasterConnection_hasUnconfirmedMessages() == false)
                         {
                             state = MasterConnectionState.M_CON_STATE_STOPPED;
 
