@@ -10,6 +10,9 @@
     <ReleaseVersion>2.3.0</ReleaseVersion>
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	<Description>lib60870.NET library for IEC 60870-5 based protocols in C#</Description>
+	<PackageLicenseExpression>GPLv3</PackageLicenseExpression>
+	<PackageOutputPath>nupkg</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
