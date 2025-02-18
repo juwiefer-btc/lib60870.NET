@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+	<Authors>Michael Zillgith</Authors>
+	<Company>MZ Automation</Company>
+	<PackageId>lib60870</PackageId>
+	<Version>2.3.0</Version>
     <RootNamespace>lib60870</RootNamespace>
     <AssemblyName>lib60870</AssemblyName>
     <ReleaseVersion>2.3.0</ReleaseVersion>
@@ -75,6 +79,8 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+	<None Include="images\icon.png" Pack="true" PackagePath="\"/>
+	<None Include="readme.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
