@@ -1,7 +1,7 @@
 /*
  *  Connection.cs
  *
- *  Copyright 2016-2022 Michael Zillgith
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -1857,7 +1857,7 @@ namespace lib60870.CS104
 
                             try
                             {
-                                // Receive a message from from the remote device.
+                                // Receive a message  from the remote device.
                                 int bytesRec = receiveMessage(bytes);
 
                                 if (bytesRec > 0)
