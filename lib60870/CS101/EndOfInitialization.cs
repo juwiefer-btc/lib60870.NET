@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870.CS101
 {
     /// <summary>
@@ -77,7 +75,7 @@ namespace lib60870.CS101
         public EndOfInitialization(EndOfInitialization original)
             : base(original.ObjectAddress)
         {
-            this.coi = original.coi;
+            coi = original.coi;
         }
 
         internal EndOfInitialization(ApplicationLayerParameters parameters, byte[] msg, int startIndex)

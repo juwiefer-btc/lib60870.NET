@@ -76,7 +76,7 @@ namespace lib60870
             if (!(obj is CP32Time2a))
                 return false;
 
-            return (this.GetHashCode() == obj.GetHashCode());
+            return (GetHashCode() == obj.GetHashCode());
         }
 
         public override int GetHashCode()
@@ -130,7 +130,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set

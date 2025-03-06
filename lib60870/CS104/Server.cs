@@ -19,18 +19,12 @@
  *  See COPYING file for the complete license text.
  */
 #define CONFIG_USE_SEMAPHORES
+using lib60870.CS101;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-
-using lib60870.CS101;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Security.Cryptography;
-using System.Collections.ObjectModel;
 
 namespace lib60870.CS104
 {
@@ -41,7 +35,7 @@ namespace lib60870.CS104
     /// <param name="parameter">User provided parameter</param>
     /// <param name="ipAddress">IP address of the connecting client</param>
     /// <returns>true if the connection has to be accepted, false otherwise</returns>
-    public delegate bool ConnectionRequestHandler(object parameter,IPAddress ipAddress);
+    public delegate bool ConnectionRequestHandler(object parameter, IPAddress ipAddress);
 
     /// <summary>
     /// Connection events for the Server
@@ -72,7 +66,7 @@ namespace lib60870.CS104
     }
 
 
-    public delegate void ConnectionEventHandler(object parameter,ClientConnection connection,ClientConnectionEvent eventType);
+    public delegate void ConnectionEventHandler(object parameter, ClientConnection connection, ClientConnectionEvent eventType);
 
     /// <summary>
     /// Server mode (redundancy group support)
@@ -162,9 +156,9 @@ namespace lib60870.CS104
             }
 
             this.enqueueMode = enqueueMode;
-            this.oldestQueueEntry = -1;
-            this.latestQueueEntry = -1;
-            this.NumberOfAsduInQueue = 0;
+            oldestQueueEntry = -1;
+            latestQueueEntry = -1;
+            NumberOfAsduInQueue = 0;
             this.maxQueueSize = maxQueueSize;
             this.parameters = parameters;
             this.DebugLog = DebugLog;
@@ -229,11 +223,10 @@ namespace lib60870.CS104
 
             }
 
-
             DebugLog("Queue contains " + NumberOfAsduInQueue + " messages (oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry + ")");
-          
+
         }
-      
+
         public void LockASDUQueue()
         {
             Monitor.Enter(enqueuedASDUs);
@@ -244,7 +237,7 @@ namespace lib60870.CS104
             Monitor.Exit(enqueuedASDUs);
         }
 
-        public bool MessageQueue_hasUnconfirmedIMessages(ASDUQueue queue)
+        public bool MessageQueue_hasUnconfirmedIMessages()
         {
             bool retVal = false;
 
@@ -260,36 +253,6 @@ namespace lib60870.CS104
                         break;
                     }
 
-                    // break if we reached the latest entry
-                    if (currentIndex == latestQueueEntry)
-                        break;
-
-                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
-                        break;
-
-                    currentIndex = (currentIndex + 1) % maxQueueSize;                   
-                }
-            }
-            return retVal;
-        }
-
-        public bool HighPriorityASDUQueue_hasUnconfirmedIMessages(Queue<BufferFrame> queue)
-        {
-            bool retVal = false;
-
-            if (NumberOfAsduInQueue != 0)
-            {
-                int currentIndex = oldestQueueEntry;
-
-                while (currentIndex > 0)
-                {
-                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
-                    {
-                        retVal = true;
-                        break;
-                    }
-
-                    // break if we reached the latest entry
                     if (currentIndex == latestQueueEntry)
                         break;
 
@@ -298,10 +261,43 @@ namespace lib60870.CS104
 
                     currentIndex = (currentIndex + 1) % maxQueueSize;
                 }
-            }            
-                return retVal;
+            }
+            return retVal;
         }
 
+        internal bool IsAsduAvailable()
+        {
+            if (enqueuedASDUs == null)
+                return false;
+
+            if (NumberOfAsduInQueue > 0)
+            {
+                int currentIndex = oldestQueueEntry;
+
+                while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
+                {
+                    // break if we reached the latest entry
+                    if (currentIndex == latestQueueEntry)
+                        break;
+
+                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
+                        break;
+
+                    currentIndex = (currentIndex + 1) % maxQueueSize;
+
+                }
+
+                if (enqueuedASDUs[currentIndex].state == QueueEntryState.WAITING_FOR_TRANSMISSION)
+                {
+                    enqueuedASDUs[currentIndex].state = QueueEntryState.SENT_BUT_NOT_CONFIRMED;
+                    return true;
+                }
+
+                return false;
+            }
+
+            return false;
+        }
 
         internal BufferFrame GetNextWaitingASDU(out long timestamp, out int index)
         {
@@ -325,7 +321,7 @@ namespace lib60870.CS104
                         break;
 
                     currentIndex = (currentIndex + 1) % maxQueueSize;
-                    
+
                 }
 
                 if (enqueuedASDUs[currentIndex].state == QueueEntryState.WAITING_FOR_TRANSMISSION)
@@ -387,7 +383,7 @@ namespace lib60870.CS104
                                 {
                                     oldestQueueEntry = -1;
                                     latestQueueEntry = -1;
-               
+
                                     break;
                                 }
 
@@ -529,7 +525,7 @@ namespace lib60870.CS104
                     }
                 }
             }
-                
+
             return matches;
         }
 
@@ -596,6 +592,7 @@ namespace lib60870.CS104
         private Socket listeningSocket;
 
         private int maxQueueSize = 1000;
+        private int maxHighPrioQueueSize = 1000;
         private int maxOpenConnections = 10;
 
         private static readonly SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
@@ -653,11 +650,28 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.maxQueueSize;
+                return maxQueueSize;
             }
             set
             {
                 maxQueueSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum size of the ASDU high priotity queue. Setting this property has no
+        /// effect after calling the Start method.
+        /// </summary>
+        /// <value>The size of the max  high priotity queue.</value>
+        public int MaxHighPrioQueueSize
+        {
+            get
+            {
+                return maxHighPrioQueueSize;
+            }
+            set
+            {
+                maxHighPrioQueueSize = value;
             }
         }
 
@@ -669,7 +683,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.maxOpenConnections;
+                return maxOpenConnections;
             }
             set
             {
@@ -708,8 +722,8 @@ namespace lib60870.CS104
         /// </summary>
         public Server()
         {
-            this.apciParameters = new APCIParameters();
-            this.alParameters = new ApplicationLayerParameters();
+            apciParameters = new APCIParameters();
+            alParameters = new ApplicationLayerParameters();
 
         }
 
@@ -719,13 +733,13 @@ namespace lib60870.CS104
         /// <param name="securityInfo">TLS layer configuation, or null when not using TLS</param>
         public Server(TlsSecurityInformation securityInfo)
         {
-            this.apciParameters = new APCIParameters();
-            this.alParameters = new ApplicationLayerParameters();
+            apciParameters = new APCIParameters();
+            alParameters = new ApplicationLayerParameters();
 
             this.securityInfo = securityInfo;
 
             if (securityInfo != null)
-                this.localPort = 19998;
+                localPort = 19998;
         }
 
         /// <summary>
@@ -751,7 +765,7 @@ namespace lib60870.CS104
             this.securityInfo = securityInfo;
 
             if (securityInfo != null)
-                this.localPort = 19998;
+                localPort = 19998;
         }
 
         /// <summary>
@@ -774,8 +788,8 @@ namespace lib60870.CS104
         /// <param name="parameter">Parameter.</param>
         public void SetConnectionRequestHandler(ConnectionRequestHandler handler, object parameter)
         {
-            this.connectionRequestHandler = handler;
-            this.connectionRequestHandlerParameter = parameter;
+            connectionRequestHandler = handler;
+            connectionRequestHandlerParameter = parameter;
         }
 
         private ConnectionEventHandler connectionEventHandler = null;
@@ -789,8 +803,8 @@ namespace lib60870.CS104
         /// <param name="parameter">Parameter.</param>
         public void SetConnectionEventHandler(ConnectionEventHandler handler, object parameter)
         {
-            this.connectionEventHandler = handler;
-            this.connectionEventHandlerParameter = parameter;
+            connectionEventHandler = handler;
+            connectionEventHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -801,7 +815,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.allOpenConnections.Count;
+                return allOpenConnections.Count;
             }
         }
 
@@ -812,11 +826,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.receiveTimeoutInMs;
+                return receiveTimeoutInMs;
             }
             set
             {
-                this.receiveTimeoutInMs = value;
+                receiveTimeoutInMs = value;
             }
         }
 
@@ -828,7 +842,7 @@ namespace lib60870.CS104
                 try
                 {
                     queueLock.Wait();
-                    count = queue.NumberOfAsduInQueue;                  
+                    count = queue.NumberOfAsduInQueue;
                     queueLock.Release();
                 }
                 catch (Exception ex)
@@ -840,7 +854,7 @@ namespace lib60870.CS104
             return count;
         }
 
-        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup  = null)
+        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup = null)
         {
             if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
@@ -849,7 +863,7 @@ namespace lib60870.CS104
                     if (connection.IsActive)
                     {
                         return GetEntryCount(connection.GetASDUQueue());
-                        
+
                     }
                 }
             }
@@ -896,10 +910,10 @@ namespace lib60870.CS104
                         DebugLog("New connection");
 
                         IPEndPoint ipEndPoint = (IPEndPoint)newSocket.RemoteEndPoint;
-          
+
                         DebugLog("  from IP: " + ipEndPoint.Address.ToString());
 
-                                                
+
                         bool acceptConnection = true;
 
                         if (OpenConnections >= maxOpenConnections)
@@ -965,7 +979,7 @@ namespace lib60870.CS104
 
                                 CallConnectionEventHandler(connection, ClientConnectionEvent.OPENED);
                             }
-							
+
                         }
                         else
                             newSocket.Close();
@@ -977,7 +991,7 @@ namespace lib60870.CS104
                     running = false;
                     DebugLog("Exception: " + e.ToString());
                 }
-					
+
             }
         }
 
@@ -1003,7 +1017,7 @@ namespace lib60870.CS104
         /// <param name="localAddress">Local IP address or hostname to bind.</param>
         public void SetLocalAddress(string localAddress)
         {
-            this.localHostname = localAddress;
+            localHostname = localAddress;
         }
 
         /// <summary>
@@ -1012,7 +1026,7 @@ namespace lib60870.CS104
         /// <param name="tcpPort">Local TCP port to bind.</param>
         public void SetLocalPort(int tcpPort)
         {
-            this.localPort = tcpPort;
+            localPort = tcpPort;
         }
 
         /// <summary>
@@ -1024,7 +1038,7 @@ namespace lib60870.CS104
             IPEndPoint localEP = new IPEndPoint(ipAddress, localPort);
 
             // Create a TCP/IP  socket.
-            listeningSocket = new Socket(AddressFamily.InterNetwork, 
+            listeningSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
             listeningSocket.Bind(localEP);
@@ -1047,7 +1061,7 @@ namespace lib60870.CS104
                     redGroups.Add(singleGroup);
                 }
             }
-           
+
             if (serverMode == ServerMode.SINGLE_REDUNDANCY_GROUP || serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
             {
                 foreach (RedundancyGroup redGroup in redGroups)
@@ -1114,7 +1128,7 @@ namespace lib60870.CS104
         public void EnqueueASDU(ASDU asdu)
         {
             /*ASDUQueue queue = new ASDUQueue(MaxQueueSize, enqueueMode, alParameters, DebugLog);
-            this.asduQueue = queue;*/
+            this.lowPrioQueue = queue;*/
 
             if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
@@ -1141,7 +1155,7 @@ namespace lib60870.CS104
             {
                 if (connectionEventHandler != null)
                     connectionEventHandler(connectionEventHandlerParameter, connection, e);
-            }                        
+            }
         }
 
         internal void Activated(ClientConnection activeConnection)
@@ -1169,18 +1183,21 @@ namespace lib60870.CS104
             activeConnection.State = MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED;
         }
 
-        public override int FileTimeout {
-            get {
+        public override int FileTimeout
+        {
+            get
+            {
                 if (fileTimeout != null)
                     return FileTimeout;
                 else
                     return -1;
             }
 
-            set {
+            set
+            {
                 fileTimeout = value;
             }
         }
     }
-	
+
 }

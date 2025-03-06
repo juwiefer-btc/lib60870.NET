@@ -21,12 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-
 namespace lib60870
 {
     /// <summary>

@@ -19,8 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
 
@@ -58,6 +56,6 @@ namespace lib60870
     /// Raw message handler. Can be used to access the raw message.
     /// Returns true when message should be handled by the protocol stack, false, otherwise.
     /// </summary>
-	public delegate bool RawMessageHandler(object parameter,byte[] message,int messageSize);
+	public delegate bool RawMessageHandler(object parameter, byte[] message, int messageSize);
 }
 

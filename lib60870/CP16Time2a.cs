@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
     public class CP16Time2a
@@ -63,7 +61,7 @@ namespace lib60870
             if (!(obj is CP16Time2a))
                 return false;
 
-            return (this.GetHashCode() == obj.GetHashCode());
+            return (GetHashCode() == obj.GetHashCode());
         }
 
         public override int GetHashCode()

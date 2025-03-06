@@ -49,8 +49,8 @@ namespace lib60870.linklayer
 
         public PrimaryLinkLayerBalanced(LinkLayer linkLayer, Func<BufferFrame> getUserData, Action<string> debugLog)
         {
-            this.DebugLog = debugLog;
-            this.GetUserData = getUserData;
+            DebugLog = debugLog;
+            GetUserData = getUserData;
             this.linkLayer = linkLayer;
         }
 
@@ -68,8 +68,8 @@ namespace lib60870.linklayer
         public int LinkLayerAddressOtherStation
         {
             set
-            { 
-                linkLayerAddressOtherStation = value; 
+            {
+                linkLayerAddressOtherStation = value;
             }
 
             get
@@ -89,7 +89,7 @@ namespace lib60870.linklayer
             }
         }
 
-        public override void HandleMessage(FunctionCodeSecondary fcs, bool dir, bool dfc, 
+        public override void HandleMessage(FunctionCodeSecondary fcs, bool dir, bool dfc,
                                      int address, byte[] msg, int userDataStart, int userDataLength)
         {
             PrimaryLinkLayerState newState = primaryState;
@@ -132,16 +132,18 @@ namespace lib60870.linklayer
 
                         if (sendLinkLayerTestFunction)
                             sendLinkLayerTestFunction = false;
-						
+
                         newState = PrimaryLinkLayerState.LINK_LAYERS_AVAILABLE;
                         SetNewState(LinkLayerState.AVAILABLE);
 
                         waitingForResponse = false;
                     }
-                    else if (primaryState == PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK) {
+                    else if (primaryState == PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK)
+                    {
                         DebugLog("PLL - ACK (FC 0) unexpected -> expected status-of-link (FC 11)");
                     }
-                    else {
+                    else
+                    {
                         waitingForResponse = false;
                     }
 
@@ -167,14 +169,14 @@ namespace lib60870.linklayer
 
                 case FunctionCodeSecondary.RESP_NACK_NO_DATA:
 
-                    DebugLog ("PLL - RECV FC 09 - RESP NACK - NO DATA\n");
+                    DebugLog("PLL - RECV FC 09 - RESP NACK - NO DATA\n");
 
                     newState = PrimaryLinkLayerState.IDLE;
                     SetNewState(LinkLayerState.ERROR);
 
                     break;
 
-                case FunctionCodeSecondary.STATUS_OF_LINK_OR_ACCESS_DEMAND:	
+                case FunctionCodeSecondary.STATUS_OF_LINK_OR_ACCESS_DEMAND:
                     DebugLog("PLL - RECV FC 11 - STATUS OF LINK");
 
                     if (primaryState == PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK)
@@ -269,7 +271,7 @@ namespace lib60870.linklayer
 
                         lastSendTime = currentTime;
                         waitingForResponse = true;
-                        newState = PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK; 
+                        newState = PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK;
                     }
 
                     break;
@@ -373,7 +375,7 @@ namespace lib60870.linklayer
                     break;
 
                 case PrimaryLinkLayerState.SECONDARY_LINK_LAYER_BUSY:
-				//TODO - reject new requests from application layer?
+                    //TODO - reject new requests from application layer?
                     break;
 
             }

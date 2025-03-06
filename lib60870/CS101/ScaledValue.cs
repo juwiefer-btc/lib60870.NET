@@ -42,17 +42,17 @@ namespace lib60870.CS101
 
         public ScaledValue(int value)
         {
-            this.Value = value;
+            Value = value;
         }
 
         public ScaledValue(short value)
         {
-            this.ShortValue = value;
+            ShortValue = value;
         }
 
         public ScaledValue(ScaledValue original)
         {
-            this.ShortValue = original.ShortValue;
+            ShortValue = original.ShortValue;
         }
 
         public byte[] GetEncodedValue()
@@ -114,5 +114,5 @@ namespace lib60870.CS101
             return "" + Value;
         }
     }
-	
+
 }

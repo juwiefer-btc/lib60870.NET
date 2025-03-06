@@ -37,8 +37,8 @@ namespace lib60870.linklayer
         public SecondaryLinkLayerUnbalanced(LinkLayer linkLayer, int address, ISecondaryApplicationLayer applicationLayer, Action<string> debugLog)
         {
             this.linkLayer = linkLayer;
-            this.linkLayerAddress = address;
-            this.DebugLog = debugLog;
+            linkLayerAddress = address;
+            DebugLog = debugLog;
             this.applicationLayer = applicationLayer;
         }
 
@@ -133,14 +133,11 @@ namespace lib60870.linklayer
                 case FunctionCodePrimary.REQUEST_USER_DATA_CLASS_2:
                     DebugLog("SLL - REQUEST USER DATA CLASS 2");
                     {
-                        bool invalidFCB = false;
-
                         if (fcv)
                         {
                             if (CheckFCB(fcb) == false)
                             {
                                 DebugLog("SLL - REQ UD2 - unexpected FCB\n");
-                                invalidFCB = true;
                             }
                         }
 
@@ -164,14 +161,11 @@ namespace lib60870.linklayer
                 case FunctionCodePrimary.REQUEST_USER_DATA_CLASS_1:
                     DebugLog("SLL - REQUEST USER DATA CLASS 1");
                     {
-                        bool invalidFCB = false;
-
                         if (fcv)
                         {
                             if (CheckFCB(fcb) == false)
                             {
                                 DebugLog("SLL - REQ UD1 - unexpected FCB\n");
-                                invalidFCB = true;
                             }
                         }
 
@@ -217,7 +211,7 @@ namespace lib60870.linklayer
                         else
                             linkLayer.SendFixedFrameSecondary(FunctionCodeSecondary.ACK, linkLayerAddress, false, false);
 
-                    }                   
+                    }
                     break;
 
                 case FunctionCodePrimary.USER_DATA_NO_REPLY:

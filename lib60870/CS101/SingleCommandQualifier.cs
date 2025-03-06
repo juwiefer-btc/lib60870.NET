@@ -19,8 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
     public class SingleCommandQualifier

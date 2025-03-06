@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870.CS101
 {
     /// <summary>
@@ -67,7 +65,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.elapsedTime;
+                return elapsedTime;
             }
         }
 
@@ -77,7 +75,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -92,9 +90,9 @@ namespace lib60870.CS101
         public EventOfProtectionEquipment(EventOfProtectionEquipment original)
             : base(original.ObjectAddress)
         {
-            this.singleEvent = new SingleEvent(original.singleEvent);
-            this.elapsedTime = new CP16Time2a(original.elapsedTime);
-            this.timestamp = new CP24Time2a(original.timestamp);
+            singleEvent = new SingleEvent(original.singleEvent);
+            elapsedTime = new CP16Time2a(original.elapsedTime);
+            timestamp = new CP24Time2a(original.timestamp);
         }
 
         internal EventOfProtectionEquipment(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -105,7 +103,7 @@ namespace lib60870.CS101
 
             if ((msg.Length - startIndex) < GetEncodedSize())
                 throw new ASDUParsingException("Message too small");
-			
+
             singleEvent = new SingleEvent(msg[startIndex++]);
 
             elapsedTime = new CP16Time2a(msg, startIndex);
@@ -169,7 +167,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.elapsedTime;
+                return elapsedTime;
             }
         }
 
@@ -179,7 +177,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -194,9 +192,9 @@ namespace lib60870.CS101
         public EventOfProtectionEquipmentWithCP56Time2a(EventOfProtectionEquipmentWithCP56Time2a original)
             : base(original.ObjectAddress)
         {
-            this.singleEvent = new SingleEvent(original.singleEvent);
-            this.elapsedTime = new CP16Time2a(original.elapsedTime);
-            this.timestamp = new CP56Time2a(original.timestamp);
+            singleEvent = new SingleEvent(original.singleEvent);
+            elapsedTime = new CP16Time2a(original.elapsedTime);
+            timestamp = new CP56Time2a(original.timestamp);
         }
 
         internal EventOfProtectionEquipmentWithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)

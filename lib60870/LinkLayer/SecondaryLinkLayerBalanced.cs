@@ -38,9 +38,9 @@ namespace lib60870.linklayer
                                     Func<int, byte[], int, int, bool> handleApplicationLayer, Action<string> debugLog)
         {
             this.linkLayer = linkLayer;
-            this.linkLayerAddress = address;
-            this.DebugLog = debugLog;
-            this.HandleApplicationLayer = handleApplicationLayer;
+            linkLayerAddress = address;
+            DebugLog = debugLog;
+            HandleApplicationLayer = handleApplicationLayer;
         }
 
 
@@ -90,12 +90,12 @@ namespace lib60870.linklayer
                         linkLayer.SendSingleCharACK();
                     else
                         linkLayer.SendFixedFrameSecondary(FunctionCodeSecondary.ACK, linkLayerAddress, false, false);
-				
+
                     break;
 
                 case FunctionCodePrimary.TEST_FUNCTION_FOR_LINK:
                     DebugLog("SLL -TEST FUNCTION FOR LINK");
-				// TODO check if DCF has to be sent
+                    // TODO check if DCF has to be sent
                     if (linkLayer.linkLayerParameters.UseSingleCharACK)
                         linkLayer.SendSingleCharACK();
                     else

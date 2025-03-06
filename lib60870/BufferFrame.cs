@@ -19,8 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
     /// <summary>
@@ -36,7 +34,7 @@ namespace lib60870
         {
             this.buffer = buffer;
             this.startPos = startPos;
-            this.bufPos = startPos;
+            bufPos = startPos;
         }
 
         public BufferFrame Clone()
@@ -83,4 +81,3 @@ namespace lib60870
         }
     }
 }
-    

@@ -69,7 +69,7 @@ namespace lib60870
             if (!(obj is CP56Time2a))
                 return false;
 
-            return (this.GetHashCode() == obj.GetHashCode());
+            return (GetHashCode() == obj.GetHashCode());
         }
 
         public override int GetHashCode()
@@ -86,15 +86,15 @@ namespace lib60870
         {
             int baseYear = (startYear / 100) * 100;
 
-            if (this.Year < (startYear % 100))
+            if (Year < (startYear % 100))
                 baseYear += 100;
 
-            int month = this.Month;
+            int month = Month;
 
             if (month == 0)
                 month = 1;
 
-            int dayOfMonth = this.DayOfMonth;
+            int dayOfMonth = DayOfMonth;
 
             if (dayOfMonth == 0)
                 dayOfMonth = 1;
@@ -103,7 +103,7 @@ namespace lib60870
 
             try
             {
-                value = new DateTime(baseYear + this.Year, month, dayOfMonth, this.Hour, this.Minute, this.Second, this.Millisecond);
+                value = new DateTime(baseYear + Year, month, dayOfMonth, Hour, Minute, Second, Millisecond);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -147,7 +147,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set

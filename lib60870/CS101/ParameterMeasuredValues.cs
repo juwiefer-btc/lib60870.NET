@@ -75,7 +75,7 @@ namespace lib60870.CS101
                 else if (value < -1.0f)
                     value = -1.0f;
 
-                this.scaledValue.Value = (int)((value * 32767.5) - 0.5);
+                scaledValue.Value = (int)((value * 32767.5) - 0.5);
             }
         }
 
@@ -94,7 +94,7 @@ namespace lib60870.CS101
         {
             scaledValue = new ScaledValue();
 
-            this.NormalizedValue = normalizedValue;
+            NormalizedValue = normalizedValue;
 
             this.qpm = qpm;
         }
@@ -240,7 +240,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.value;
+                return value;
             }
         }
 

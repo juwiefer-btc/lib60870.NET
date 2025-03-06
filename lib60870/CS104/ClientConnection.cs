@@ -19,19 +19,15 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-using System.Collections.Generic;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-using System.IO;
-
-using lib60870;
 using lib60870.CS101;
+using System;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Net;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace lib60870.CS104
 {
@@ -69,7 +65,7 @@ namespace lib60870.CS104
 
         static byte[] TESTFR_ACT_MSG = new byte[] { 0x68, 0x04, 0x43, 0x00, 0x00, 0x00 };
 
-       
+
         private MasterConnectionState state;
         private int sendCount = 0;
         private int receiveCount = 0;
@@ -89,7 +85,7 @@ namespace lib60870.CS104
 
         /* timestamp when the last confirmation message was sent */
         private UInt64 lastConfirmationTime = System.UInt64.MaxValue;
-      
+
         private TlsSecurityInformation tlsSecInfo = null;
 
         private APCIParameters apciParameters;
@@ -103,8 +99,6 @@ namespace lib60870.CS104
         private ConcurrentQueue<ASDU> receivedASDUs = null;
         private Thread callbackThread = null;
         private bool callbackThreadRunning = false;
-
-        private Queue<BufferFrame> waitingASDUsHighPrio = null;
 
         /* data structure for k-size sent ASDU buffer */
         private struct SentASDU
@@ -127,13 +121,15 @@ namespace lib60870.CS104
         private int newestSentASDU = -1;
         private SentASDU[] sentASDUs = null;
 
-        private ASDUQueue asduQueue = null;
+        private ASDUQueue lowPrioQueue = null;
+
+        private ASDUQueue highPrioQueue = null;
 
         private FileServer fileServer;
 
         internal ASDUQueue GetASDUQueue()
         {
-            return asduQueue;
+            return lowPrioQueue;
         }
 
         private void ProcessASDUs()
@@ -147,14 +143,14 @@ namespace lib60870.CS104
                 {
                     while ((receivedASDUs.Count > 0) && (callbackThreadRunning) && (running))
                     {
-    				
+
                         ASDU asdu;
 
                         if (receivedASDUs.TryDequeue(out asdu))
                         {
                             HandleASDU(asdu);
                         }
-    						
+
                     }
 
                     Thread.Sleep(50);
@@ -190,32 +186,33 @@ namespace lib60870.CS104
             connectionsCounter++;
             connectionID = connectionsCounter;
 
-            this.remoteEndpoint = (IPEndPoint)socket.RemoteEndPoint;
+            remoteEndpoint = (IPEndPoint)socket.RemoteEndPoint;
 
             this.apciParameters = apciParameters;
-            this.alParameters = parameters;
+            alParameters = parameters;
             this.server = server;
-            this.asduQueue = asduQueue;
+            lowPrioQueue = asduQueue;
             this.debugOutput = debugOutput;
 
             ResetT3Timeout((UInt64)SystemUtils.currentTimeMillis());
 
             maxSentASDUs = apciParameters.K;
-            this.sentASDUs = new SentASDU[maxSentASDUs];
+            sentASDUs = new SentASDU[maxSentASDUs];
 
             receivedASDUs = new ConcurrentQueue<ASDU>();
-            waitingASDUsHighPrio = new Queue<BufferFrame>();
+            highPrioQueue = new ASDUQueue(server.MaxHighPrioQueueSize, server.EnqueueMode, alParameters, DebugLog);
+            //highPrioQueue = new Queue<BufferFrame>();
 
             socketStream = new NetworkStream(socket);
             this.socket = socket;
             this.tlsSecInfo = tlsSecInfo;
 
-            this.fileServer = new FileServer(this, server.GetAvailableFiles(), DebugLog);
+            fileServer = new FileServer(this, server.GetAvailableFiles(), DebugLog);
 
             if (server.fileTimeout != null)
-                this.fileServer.Timeout = (long) server.fileTimeout;
+                fileServer.Timeout = (long)server.fileTimeout;
 
-            this.fileServer.SetFileReadyHandler (server.fileReadyHandler, server.fileReadyHandlerParameter);
+            fileServer.SetFileReadyHandler(server.fileReadyHandler, server.fileReadyHandlerParameter);
 
             Thread workerThread = new Thread(HandleConnection);
 
@@ -289,7 +286,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.isActive;
+                return isActive;
             }
             set
             {
@@ -303,7 +300,7 @@ namespace lib60870.CS104
                     {
                         DebugLog("is active");
                         state = MasterConnectionState.M_CON_STATE_STARTED;
-                    }                        
+                    }
                     else
                         DebugLog("is not active");
                 }
@@ -446,7 +443,7 @@ namespace lib60870.CS104
                 lock (socketStream)
                 {
                     socketStream.Write(buffer, 0, msgSize);
-                    DebugLog("SEND I (size = " + msgSize + ") : " +	BitConverter.ToString(buffer, 0, msgSize));
+                    DebugLog("SEND I (size = " + msgSize + ") : " + BitConverter.ToString(buffer, 0, msgSize));
                     sendCount = (sendCount + 1) % 32768;
                     unconfirmedReceivedIMessages = 0;
                     timeoutT2Triggered = false;
@@ -461,17 +458,18 @@ namespace lib60870.CS104
             return sendCount;
         }
 
+
         public bool MasterConnection_hasUnconfirmedMessages()
         {
             bool retVal = false;
 
-            if(asduQueue != null)
+            if (lowPrioQueue != null)
             {
-                if (asduQueue.MessageQueue_hasUnconfirmedIMessages(asduQueue))
+                if (lowPrioQueue.MessageQueue_hasUnconfirmedIMessages())
                     return true;
 
-                if (asduQueue.HighPriorityASDUQueue_hasUnconfirmedIMessages(waitingASDUsHighPrio))              
-                    return true;               
+                if (highPrioQueue.MessageQueue_hasUnconfirmedIMessages())
+                    return true;
             }
 
             return retVal;
@@ -517,7 +515,7 @@ namespace lib60870.CS104
                     } while (nextIndex != -1);
 
                     DebugLog("--------------------");
-					
+
                 }
             }
         }
@@ -532,8 +530,8 @@ namespace lib60870.CS104
                 long timestamp;
                 int index;
 
-                asduQueue.LockASDUQueue();
-                BufferFrame asdu = asduQueue.GetNextWaitingASDU(out timestamp, out index);
+                lowPrioQueue.LockASDUQueue();
+                BufferFrame asdu = lowPrioQueue.GetNextWaitingASDU(out timestamp, out index);
 
                 try
                 {
@@ -551,7 +549,7 @@ namespace lib60870.CS104
                         {
                             currentIndex = (newestSentASDU + 1) % maxSentASDUs;
                         }
-							
+
                         sentASDUs[currentIndex].entryTime = timestamp;
                         sentASDUs[currentIndex].queueIndex = index;
                         sentASDUs[currentIndex].seqNo = SendIMessage(asdu);
@@ -564,7 +562,7 @@ namespace lib60870.CS104
                 }
                 finally
                 {
-                    asduQueue.UnlockASDUQueue();
+                    lowPrioQueue.UnlockASDUQueue();
                 }
             }
         }
@@ -576,12 +574,14 @@ namespace lib60870.CS104
                 if (isSentBufferFull())
                     return false;
 
-                BufferFrame asdu = waitingASDUsHighPrio.Dequeue();
+                int currentIndex = 0;
+                long timestamp;
+
+                BufferFrame asdu = highPrioQueue.GetNextWaitingASDU(out timestamp, out currentIndex);
 
                 if (asdu != null)
                 {
 
-                    int currentIndex = 0;
 
                     if (oldestSentASDU == -1)
                     {
@@ -593,8 +593,9 @@ namespace lib60870.CS104
                     {
                         currentIndex = (newestSentASDU + 1) % maxSentASDUs;
                     }
-						
+
                     sentASDUs[currentIndex].queueIndex = -1;
+                    sentASDUs[currentIndex].entryTime = timestamp;
                     sentASDUs[currentIndex].seqNo = SendIMessage(asdu);
                     sentASDUs[currentIndex].sentTime = SystemUtils.currentTimeMillis();
 
@@ -612,10 +613,10 @@ namespace lib60870.CS104
         private void SendWaitingASDUs()
         {
 
-            lock (waitingASDUsHighPrio)
+            lock (highPrioQueue)
             {
 
-                while (waitingASDUsHighPrio.Count > 0)
+                while (highPrioQueue.IsAsduAvailable())
                 {
 
                     if (sendNextHighPriorityASDU() == false)
@@ -626,7 +627,6 @@ namespace lib60870.CS104
                 }
             }
 
-            // send messages from low-priority queue
             sendNextAvailableASDU();
         }
 
@@ -634,18 +634,18 @@ namespace lib60870.CS104
         {
             if (isActive)
             {
-                lock (waitingASDUsHighPrio)
+                lock (highPrioQueue)
                 {
 
                     BufferFrame frame = new BufferFrame(new byte[256], 6);
 
                     asdu.Encode(frame, alParameters);
 
-                    waitingASDUsHighPrio.Enqueue(frame);
+                    highPrioQueue.EnqueueAsdu(asdu);
                 }
 
                 SendWaitingASDUs();
-            } 
+            }
         }
 
         /// <summary>
@@ -678,7 +678,7 @@ namespace lib60870.CS104
         }
 
         private void HandleASDU(ASDU asdu)
-        {		
+        {
             DebugLog("Handle received ASDU");
 
             bool messageHandled = false;
@@ -718,7 +718,7 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
+                        SendASDUInternal(asdu);
                         messageHandled = true;
                     }
 
@@ -756,7 +756,7 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
+                        SendASDUInternal(asdu);
                         messageHandled = true;
                     }
 
@@ -779,14 +779,14 @@ namespace lib60870.CS104
                             {
                                 if (server.readHandler(server.readHandlerParameter, this, asdu, rc.ObjectAddress))
                                     messageHandled = true;
-                            }                         
+                            }
                         }
                     }
                     else
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
+                        SendASDUInternal(asdu);
                         messageHandled = true;
                     }
 
@@ -820,15 +820,15 @@ namespace lib60870.CS104
                                         csc.ObjectAddress = 0;
                                         asdu.AddInformationObject(csc);
                                         asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
-                                        this.SendASDUInternal(asdu);
+                                        SendASDUInternal(asdu);
                                     }
                                     else
                                     {
                                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                                         asdu.IsNegative = true;
-                                        this.SendASDUInternal(asdu);
+                                        SendASDUInternal(asdu);
                                     }
-                                    
+
                                 }
 
                                 messageHandled = true;
@@ -840,7 +840,7 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
+                        SendASDUInternal(asdu);
                         messageHandled = true;
                     }
 
@@ -865,7 +865,7 @@ namespace lib60870.CS104
                             else
                             {
                                 asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
-                                this.SendASDUInternal(asdu);
+                                SendASDUInternal(asdu);
                             }
 
                             messageHandled = true;
@@ -875,7 +875,7 @@ namespace lib60870.CS104
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
                             messageHandled = true;
-                            this.SendASDUInternal(asdu);
+                            SendASDUInternal(asdu);
                         }
                     }
                     else
@@ -884,7 +884,7 @@ namespace lib60870.CS104
                         DebugLog("CS104 SLAVE: Rcvd test command C_TS_NA_1 -> not allowed\n");
                         messageHandled = false;
                     }
-                    
+
                     break;
 
                 case TypeID.C_RP_NA_1: /* 105 - Reset process command */
@@ -921,8 +921,8 @@ namespace lib60870.CS104
                     {
                         asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                         asdu.IsNegative = true;
-                        this.SendASDUInternal(asdu);
-                        messageHandled = true;                       
+                        SendASDUInternal(asdu);
+                        messageHandled = true;
                     }
 
                     break;
@@ -963,7 +963,7 @@ namespace lib60870.CS104
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
                             messageHandled = true;
-                            this.SendASDUInternal(asdu);
+                            SendASDUInternal(asdu);
                         }
                     }
                     else
@@ -1000,7 +1000,7 @@ namespace lib60870.CS104
                         asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
 
                     messageHandled = true;
-                    this.SendASDUInternal(asdu);
+                    SendASDUInternal(asdu);
 
                     break;
 
@@ -1019,7 +1019,7 @@ namespace lib60870.CS104
             {
                 asdu.Cot = CauseOfTransmission.UNKNOWN_TYPE_ID;
                 asdu.IsNegative = true;
-                this.SendASDUInternal(asdu);
+                SendASDUInternal(asdu);
             }
 
         }
@@ -1069,13 +1069,13 @@ namespace lib60870.CS104
                     if (oldestValidSeqNo == seqNo)
                         seqNoIsValid = true;
                 }
-					
+
                 if (seqNoIsValid == false)
                 {
                     DebugLog("Received sequence number out of range");
                     return false;
                 }
-								
+
                 if (oldestSentASDU != -1)
                 {
                     /* remove confirmed messages from list */
@@ -1094,7 +1094,7 @@ namespace lib60870.CS104
                         /* remove from server (low-priority) queue if required */
                         if (sentASDUs[oldestSentASDU].queueIndex != -1)
                         {
-                            asduQueue.MarkASDUAsConfirmed(sentASDUs[oldestSentASDU].queueIndex,
+                            lowPrioQueue.MarkASDUAsConfirmed(sentASDUs[oldestSentASDU].queueIndex,
                                 sentASDUs[oldestSentASDU].entryTime);
                         }
 
@@ -1224,11 +1224,11 @@ namespace lib60870.CS104
                 // Check for STARTDT_ACT message
                 else if ((buffer[2] & 0x07) == 0x07)
                 {
-                    if (this.isActive == false)
+                    if (isActive == false)
                     {
-                        this.isActive = true;
+                        isActive = true;
 
-                        this.server.Activated(this);
+                        server.Activated(this);
                     }
 
                     DebugLog("Send STARTDT_CON");
@@ -1241,11 +1241,11 @@ namespace lib60870.CS104
                 {
                     DebugLog("Received STARTDT_ACT");
 
-                    if (this.isActive == true)
+                    if (isActive == true)
                     {
-                        this.isActive = false;
+                        isActive = false;
 
-                        this.server.Deactivated(this);
+                        server.Deactivated(this);
                     }
 
                     /* Send S-Message to confirm all outstanding messages */
@@ -1258,7 +1258,7 @@ namespace lib60870.CS104
                         SendSMessage();
                     }
 
-                    if(MasterConnection_hasUnconfirmedMessages())
+                    if (MasterConnection_hasUnconfirmedMessages())
                     {
                         DebugLog("CS104 SLAVE: Unconfirmed messages after STOPDT_ACT -> pending unconfirmed stopped state\n");
                     }
@@ -1277,7 +1277,7 @@ namespace lib60870.CS104
                             DebugLog("Failed to send STOPDT_CON");
                             return false;
                         }
-                    }                   
+                    }
                 }
 
                 // Check for TESTFR_CON message
@@ -1366,7 +1366,7 @@ namespace lib60870.CS104
 
                 waitingForTestFRcon = true;
 
-                ResetTestFRConTimeout(currentTime);                
+                ResetTestFRConTimeout(currentTime);
             }
 
             /* Check for TEST FR con timeout */
@@ -1393,7 +1393,7 @@ namespace lib60870.CS104
                     SendSMessage();
                 }
             }
-				
+
             /* check if counterpart confirmed I messages */
             lock (sentASDUs)
             {
@@ -1445,7 +1445,7 @@ namespace lib60870.CS104
 
                     foreach (X509Certificate2 caCert in tlsSecInfo.CaCertificates)
                         newChain.ChainPolicy.ExtraStore.Add(caCert);
-					
+
                     bool certificateStatus = newChain.Build(new X509Certificate2(cert.GetRawCertData()));
 
                     if (certificateStatus == false)
@@ -1493,7 +1493,7 @@ namespace lib60870.CS104
                         SslStream sslStream = new SslStream(socketStream, true, validationCallback);
 
                         bool authenticationSuccess = false;
-                       
+
                         try
                         {
                             System.Security.Authentication.SslProtocols tlsVersion = System.Security.Authentication.SslProtocols.None;
@@ -1504,13 +1504,13 @@ namespace lib60870.CS104
                             DebugLog("Using TLS version: " + tlsVersion.ToString());
 
                             sslStream.AuthenticateAsServer(tlsSecInfo.OwnCertificate, true, tlsVersion, false);
-						
+
                             if (sslStream.IsAuthenticated == true)
                             {
                                 socketStream = sslStream;
                                 authenticationSuccess = true;
                             }
-							
+
                         }
                         catch (IOException e)
                         {
@@ -1523,7 +1523,7 @@ namespace lib60870.CS104
                                 DebugLog("TLS authentication error: " + e.Message);
                             }
                         }
-							
+
                         if (authenticationSuccess == true)
                             socketStream = sslStream;
                         else
@@ -1553,8 +1553,8 @@ namespace lib60870.CS104
 
                             if (bytesRec > 0)
                             {
-							
-                                DebugLog("RCVD: " +	BitConverter.ToString(bytes, 0, bytesRec));
+
+                                DebugLog("RCVD: " + BitConverter.ToString(bytes, 0, bytesRec));
 
                                 if (HandleMessage(bytes, bytesRec) == false)
                                 {
@@ -1568,11 +1568,11 @@ namespace lib60870.CS104
                                     unconfirmedReceivedIMessages = 0;
                                     timeoutT2Triggered = false;
                                     SendSMessage();
-                                }	
+                                }
                             }
                             else if (bytesRec == -1)
                             {
-                                running = false;	
+                                running = false;
                             }
                         }
                         catch (System.IO.IOException)
@@ -1631,7 +1631,7 @@ namespace lib60870.CS104
 
             // unmark unconfirmed messages in queue if k-buffer not empty
             if (oldestSentASDU != -1)
-                asduQueue.UnmarkAllASDUs();
+                lowPrioQueue.UnmarkAllASDUs();
 
             server.Remove(this);
 
@@ -1644,7 +1644,7 @@ namespace lib60870.CS104
             DebugLog("Connection thread finished");
         }
 
-        void HandleRemoteCertificateValidationCallback (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        void HandleRemoteCertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
         }
 
@@ -1661,5 +1661,5 @@ namespace lib60870.CS104
         }
 
     }
-	
+
 }

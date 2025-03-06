@@ -1,84 +1,88 @@
-﻿using NUnit.Framework;
-using System;
-using System.Threading;
-using System.Net.Sockets;
-using lib60870;
+﻿using lib60870;
 using lib60870.CS101;
 using lib60870.CS104;
-using System.Security.Cryptography;
-using System.Runtime.Intrinsics.Arm;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using NUnit.Framework;
+using System;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace tests
 {
-	class TestInteger32Object : InformationObject, IPrivateIOFactory
-	{
-		private int value = 0;
+    class TestInteger32Object : InformationObject, IPrivateIOFactory
+    {
+        private int value = 0;
 
-		public TestInteger32Object ()
-			: base (0)
-		{
-		}
+        public TestInteger32Object()
+            : base(0)
+        {
+        }
 
-		public TestInteger32Object(int ioa, int value)
-			:base (ioa)
-		{
-			this.value = value;
-		}
+        public TestInteger32Object(int ioa, int value)
+            : base(ioa)
+        {
+            this.value = value;
+        }
 
-		public int Value {
-			get {
-				return this.value;
-			}
-			set {
-				this.value = value;
-			}
-		}
+        public int Value
+        {
+            get
+            {
+                return value;
+            }
+            set
+            {
+                this.value = value;
+            }
+        }
 
-		private TestInteger32Object (ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
-			:base(parameters, msg, startIndex, isSequence)
-		{
-			if (!isSequence)
-				startIndex += parameters.SizeOfIOA; /* skip IOA */
+        private TestInteger32Object(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
+            : base(parameters, msg, startIndex, isSequence)
+        {
+            if (!isSequence)
+                startIndex += parameters.SizeOfIOA; /* skip IOA */
 
-			value = msg [startIndex++];
-			value += ((int)msg [startIndex++] * 0x100);
-			value += ((int)msg [startIndex++] * 0x10000);
-			value += ((int)msg [startIndex++] * 0x1000000);
-		}
+            value = msg[startIndex++];
+            value += (msg[startIndex++] * 0x100);
+            value += (msg[startIndex++] * 0x10000);
+            value += (msg[startIndex++] * 0x1000000);
+        }
 
-		public override bool SupportsSequence {
-			get {
-				return true;
-			}
-		}
+        public override bool SupportsSequence
+        {
+            get
+            {
+                return true;
+            }
+        }
 
-		public override TypeID Type {
-			get {
-				return (TypeID)41;
-			}
-		}
+        public override TypeID Type
+        {
+            get
+            {
+                return (TypeID)41;
+            }
+        }
 
-		InformationObject IPrivateIOFactory.Decode (ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
-		{
-			return new TestInteger32Object (parameters, msg, startIndex, isSequence);
-		}
+        InformationObject IPrivateIOFactory.Decode(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
+        {
+            return new TestInteger32Object(parameters, msg, startIndex, isSequence);
+        }
 
-		public override int GetEncodedSize()
-		{
-			return 4;
-		}
+        public override int GetEncodedSize()
+        {
+            return 4;
+        }
 
-		public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence) {
-			base.Encode(frame, parameters, isSequence);
+        public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
+        {
+            base.Encode(frame, parameters, isSequence);
 
-			frame.SetNextByte((byte) (value % 0x100));
-			frame.SetNextByte((byte) ((value / 0x100) % 0x100));
-			frame.SetNextByte((byte) ((value / 0x10000) % 0x100));
-			frame.SetNextByte((byte) (value / 0x1000000));
-		}
-	}
+            frame.SetNextByte((byte)(value % 0x100));
+            frame.SetNextByte((byte)((value / 0x100) % 0x100));
+            frame.SetNextByte((byte)((value / 0x10000) % 0x100));
+            frame.SetNextByte((byte)(value / 0x1000000));
+        }
+    }
 
 
 
@@ -215,7 +219,7 @@ namespace tests
         {
             TestCommand tc = new TestCommand();
 
-            Assert.IsTrue(tc.Valid);           
+            Assert.IsTrue(tc.Valid);
 
         }
 
@@ -755,9 +759,9 @@ namespace tests
 
             int i = 0;
 
-            for(i = 0; i < 60; i++)
+            for (i = 0; i < 60; i++)
             {
-                SinglePointInformation sp = new SinglePointInformation(100 + i, true, new QualityDescriptor() );
+                SinglePointInformation sp = new SinglePointInformation(100 + i, true, new QualityDescriptor());
 
                 bool added = asdu.AddInformationObject(sp);
 
@@ -789,8 +793,6 @@ namespace tests
             server.Start();
 
             server.DebugOutput = true;
-
-            ConnectionException se = null;
 
             CS104SlaveEventQueue1 info = new CS104SlaveEventQueue1
             {
@@ -872,7 +874,7 @@ namespace tests
 
             Assert.AreEqual(5, info.asduHandlerCalled);
             Assert.AreEqual(5, info.spontCount);
-            Assert.AreEqual(20, info.lastScaledValue);        
+            Assert.AreEqual(20, info.lastScaledValue);
 
             server.Stop();
             server = null;
@@ -1814,7 +1816,7 @@ namespace tests
             Assert.AreEqual(1, connection.GetStatistics().SentMsgCounter); /* STARTDT + ASDU */
 
             while (connection.GetStatistics().RcvdMsgCounter < 2)
-                Thread.Sleep(1);    
+                Thread.Sleep(1);
 
             Assert.AreEqual(2, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU */
 
@@ -1826,7 +1828,7 @@ namespace tests
             {
                 connection.SendASDU(asdu);
             }
-            catch (ConnectionException e)
+            catch (ConnectionException)
             {
             }
 
@@ -1894,14 +1896,12 @@ namespace tests
             // Expect connection to be closed due to three missing TESTFR_CON responses
             Assert.IsFalse(connection.IsRunning);
 
-            ConnectionException ce = null;
-
             // Connection is closed. SendASDU should fail
             try
             {
                 connection.SendASDU(asdu);
             }
-            catch (ConnectionException e)
+            catch (ConnectionException)
             {
             }
 
@@ -1912,9 +1912,9 @@ namespace tests
             connection.Close();
             server.Stop();
 
-             Assert.AreEqual(4, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
+            Assert.AreEqual(4, connection.GetStatistics().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
 
-             Assert.AreEqual(0, connection.GetStatistics().RcvdTestFrConCounter);
+            Assert.AreEqual(0, connection.GetStatistics().RcvdTestFrConCounter);
         }
 
         private static bool testSendTestFRTimeoutSlaveRawMessageHandler(object param, byte[] msg, int msgSize)
@@ -2986,12 +2986,22 @@ namespace tests
             Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
+            Thread.Sleep(2000);
 
             Receiver receiver = new Receiver();
 
-            con.GetFile(1, 30000, NameOfFile.TRANSPARENT_FILE, receiver);
+            try
+            {
 
-            Thread.Sleep(3000);
+                con.GetFile(1, 30000, NameOfFile.TRANSPARENT_FILE, receiver, 10000);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Test] GetFile threw an exception: {ex.Message}");
+                Assert.Fail("GetFile failed!");
+            }
+
+            Thread.Sleep(15000);
             Assert.IsTrue(receiver.finishedCalled);
             Assert.AreEqual(100, receiver.recvdBytes);
             Assert.AreEqual(1, receiver.lastSection);
@@ -3113,7 +3123,7 @@ namespace tests
 
             for (int i = 0; i < 1000; i++)
                 fileData[i] = (byte)(i);
-          
+
             file.AddSection(fileData);
 
             server.GetAvailableFiles().AddFile(file);
@@ -3159,7 +3169,7 @@ namespace tests
                 return receiver;
             }, null);
             server.Start();
-                     
+
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
 
             byte[] fileData = new byte[100];
@@ -3173,7 +3183,7 @@ namespace tests
             Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
             Thread.Sleep(2000);
-           
+
             try
             {
                 con.SendFile(1, 30000, NameOfFile.TRANSPARENT_FILE, file);
@@ -3228,7 +3238,7 @@ namespace tests
             file.AddSection(fileData);
 
             server.GetAvailableFiles().AddFile(file);
-          
+
             Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
             Thread.Sleep(2000);
@@ -3290,7 +3300,7 @@ namespace tests
             file.AddSection(fileData);
             file.AddSection(fileData2);
 
-            server.GetAvailableFiles().AddFile(file);          
+            server.GetAvailableFiles().AddFile(file);
 
             Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
@@ -3431,7 +3441,7 @@ namespace tests
             Assert.AreEqual(integratedTotalsOriginal.BCR.Invalid, integratedTotalsWithCP56Copy.BCR.Invalid);
             Assert.AreEqual(integratedTotalsOriginal.BCR.SequenceNumber, integratedTotalsWithCP56Copy.BCR.SequenceNumber);
         }
-        
+
         [Test()]
         public void TestSingleRedundancyGroup()
         {
@@ -3551,7 +3561,6 @@ namespace tests
             int waitTime = 1000;
             int enqueuedMessage = 0;
             int maxLoop = server.MaxQueueSize + 3;
-            int loopCount = 0;
             while (running && server.IsRunning())
             {
                 Thread.Sleep(100);

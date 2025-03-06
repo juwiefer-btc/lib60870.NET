@@ -19,8 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870.CS101
 {
     public class QualityDescriptor
@@ -41,12 +39,12 @@ namespace lib60870.CS101
 
         public QualityDescriptor()
         {
-            this.encodedValue = 0;
+            encodedValue = 0;
         }
 
         public QualityDescriptor(QualityDescriptor original)
         {
-            this.encodedValue = original.encodedValue;
+            encodedValue = original.encodedValue;
         }
 
         public QualityDescriptor(byte encodedValue)
@@ -62,12 +60,12 @@ namespace lib60870.CS101
             if (!(obj is QualityDescriptor))
                 return false;
 
-            return (this.encodedValue == ((QualityDescriptor)obj).encodedValue);
+            return (encodedValue == ((QualityDescriptor)obj).encodedValue);
         }
 
         public override int GetHashCode()
         {
-            return this.encodedValue.GetHashCode();
+            return encodedValue.GetHashCode();
         }
 
         public bool Overflow
@@ -171,7 +169,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.encodedValue;
+                return encodedValue;
             }
             set
             {
@@ -184,6 +182,6 @@ namespace lib60870.CS101
             return string.Format("[QualityDescriptor: Overflow={0}, Blocked={1}, Substituted={2}, NonTopical={3}, Invalid={4}]", Overflow, Blocked, Substituted, NonTopical, Invalid);
         }
     }
-		
+
 }
 

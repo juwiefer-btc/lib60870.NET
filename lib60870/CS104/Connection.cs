@@ -21,19 +21,15 @@
  *  See COPYING file for the complete license text.
  */
 
+using lib60870.CS101;
 using System;
-
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
+using System.Net;
 using System.Net.Security;
-
-using lib60870.CS101;
-using System.Net.Http;
+using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace lib60870.CS104
 {
@@ -61,7 +57,7 @@ namespace lib60870.CS104
         /// Conformation of STOP DT command received (server will no longer send or accept application layer messages)
         /// </summary>
         STOPDT_CON_RECEIVED = 3,
-        
+
         /// <summary>
         /// The connect attempt has failed
         /// </summary>
@@ -104,11 +100,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.sentMsgCounter;
+                return sentMsgCounter;
             }
             internal set
             {
-                this.sentMsgCounter = value;
+                sentMsgCounter = value;
             }
         }
 
@@ -120,11 +116,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.rcvdMsgCounter;
+                return rcvdMsgCounter;
             }
             internal set
             {
-                this.rcvdMsgCounter = value;
+                rcvdMsgCounter = value;
             }
         }
 
@@ -136,11 +132,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.rcvdTestFrActCounter;
+                return rcvdTestFrActCounter;
             }
             internal set
             {
-                this.rcvdTestFrActCounter = value;
+                rcvdTestFrActCounter = value;
             }
         }
 
@@ -152,11 +148,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.rcvdTestFrConCounter;
+                return rcvdTestFrConCounter;
             }
             internal set
             {
-                this.rcvdTestFrConCounter = value;
+                rcvdTestFrConCounter = value;
             }
         }
     }
@@ -164,12 +160,12 @@ namespace lib60870.CS104
     /// <summary>
     /// ASDU received handler.
     /// </summary>
-    public delegate bool ASDUReceivedHandler(object parameter,ASDU asdu);
+    public delegate bool ASDUReceivedHandler(object parameter, ASDU asdu);
 
     /// <summary>
     /// Callback handler for connection events
     /// </summary>
-    public delegate void ConnectionHandler(object parameter,ConnectionEvent connectionEvent);
+    public delegate void ConnectionHandler(object parameter, ConnectionEvent connectionEvent);
 
     /// <summary>
     /// A single connection to a CS 104 (IEC 60870-5-104) server. Implements the \ref Master interface.
@@ -257,7 +253,7 @@ namespace lib60870.CS104
 
         private string localIpAddress = null;
         private int localTcpPort = 0;
-   
+
         /// <summary>
         /// Set the local IP address for the local connection endpoint
         /// </summary>
@@ -290,7 +286,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.useSendMessageQueue;
+                return useSendMessageQueue;
             }
             set
             {
@@ -307,11 +303,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.sendSequenceNumber;
+                return sendSequenceNumber;
             }
             set
             {
-                this.sendSequenceNumber = value;
+                sendSequenceNumber = value;
             }
         }
 
@@ -336,11 +332,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.receiveSequenceNumber;
+                return receiveSequenceNumber;
             }
             set
             {
-                this.receiveSequenceNumber = value;
+                receiveSequenceNumber = value;
             }
         }
 
@@ -353,11 +349,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.autostart;
+                return autostart;
             }
             set
             {
-                this.autostart = value;
+                autostart = value;
             }
         }
 
@@ -403,7 +399,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.alParameters;
+                return alParameters;
             }
         }
 
@@ -724,7 +720,7 @@ namespace lib60870.CS104
             this.alParameters = alParameters;
             this.apciParameters = apciParameters;
             this.tcpPort = tcpPort;
-            this.connectTimeoutInMs = apciParameters.T0 * 1000;
+            connectTimeoutInMs = apciParameters.T0 * 1000;
 
             connectionCounter++;
             connectionID = connectionCounter;
@@ -804,7 +800,7 @@ namespace lib60870.CS104
         /// <returns>The connection statistics.</returns>
         public ConnectionStatistics GetStatistics()
         {
-            return this.statistics;
+            return statistics;
         }
 
         /// <summary>
@@ -813,7 +809,7 @@ namespace lib60870.CS104
         /// <param name="millies">timeout value in milliseconds (ms)</param>
         public void SetConnectTimeout(int millies)
         {
-            this.connectTimeoutInMs = millies;
+            connectTimeoutInMs = millies;
         }
 
         /// <summary>
@@ -823,11 +819,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.connectTimeoutInMs;
+                return connectTimeoutInMs;
             }
             set
             {
-                this.connectTimeoutInMs = value;
+                connectTimeoutInMs = value;
             }
         }
 
@@ -838,11 +834,11 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.receiveTimeoutInMs;
+                return receiveTimeoutInMs;
             }
             set
             {
-                this.receiveTimeoutInMs = value;
+                receiveTimeoutInMs = value;
             }
         }
 
@@ -1083,7 +1079,7 @@ namespace lib60870.CS104
                 {
                     throw new ConnectionException("Failed to write to socket", ex);
                 }
-           
+
                 statistics.SentMsgCounter++;
                 if (sentMessageHandler != null)
                 {
@@ -1114,7 +1110,7 @@ namespace lib60870.CS104
                 {
                     throw new ConnectionException("Failed to write to socket", ex);
                 }
-                
+
                 statistics.SentMsgCounter++;
                 if (sentMessageHandler != null)
                 {
@@ -1170,7 +1166,7 @@ namespace lib60870.CS104
                 {
                     throw new ConnectionException("Failed to write to socket", ex);
                 }
-                
+
                 statistics.SentMsgCounter++;
                 if (sentMessageHandler != null)
                 {
@@ -1198,7 +1194,7 @@ namespace lib60870.CS104
                 {
                     throw new ConnectionException("Failed to write to socket", ex);
                 }
-                
+
                 statistics.SentMsgCounter++;
                 if (sentMessageHandler != null)
                 {
@@ -1334,7 +1330,7 @@ namespace lib60870.CS104
 
                 if (currentReadTimeout == 0)
                 {
-                    currentReadTimeout = SystemUtils.currentTimeMillis() + this.receiveTimeoutInMs;
+                    currentReadTimeout = SystemUtils.currentTimeMillis() + receiveTimeoutInMs;
                 }
             }
 
@@ -1589,7 +1585,7 @@ namespace lib60870.CS104
 
                     socket.Disconnect(true);
                 }
-                    
+
 
                 socket.Close(0);
                 socket = null;
@@ -1618,7 +1614,7 @@ namespace lib60870.CS104
 
                     statistics.SentMsgCounter++;
                     DebugLog("U message T3 timeout");
-                    uMessageTimeout = (UInt64)currentTime + (UInt64)(apciParameters.T1 * 1000);
+                    uMessageTimeout = currentTime + (UInt64)(apciParameters.T1 * 1000);
                     outStandingTestFRConMessages++;
                     ResetT3Timeout();
                     if (sentMessageHandler != null)
@@ -1683,7 +1679,7 @@ namespace lib60870.CS104
                 return false;
         }
 
-        private bool CertificateValidationCallback (Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        private bool CertificateValidationCallback(Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (certificate != null)
             {
@@ -1873,7 +1869,7 @@ namespace lib60870.CS104
 
                                     if (recvRawMessageHandler != null)
                                         handleMessage = recvRawMessageHandler(recvRawMessageHandlerParameter, bytes, bytesRec);
-                                 
+
                                     if (handleMessage)
                                     {
                                         if (checkMessage(bytes, bytesRec) == false)
@@ -1913,7 +1909,7 @@ namespace lib60870.CS104
                                     loopRunning = false;
 
                                 if (fileClient != null)
-                                    fileClient.HandleFileService ();
+                                    fileClient.HandleFileService();
 
                                 if (isConnected() == false)
                                     loopRunning = false;
@@ -1949,7 +1945,7 @@ namespace lib60870.CS104
                         DebugLog("CLOSE CONNECTION!");
 
                         // Release the socket.
-                       
+
 
                         running = false;
                         socketError = true;
@@ -1968,7 +1964,7 @@ namespace lib60870.CS104
 
                             socket.Disconnect(true);
                         }
-                            
+
 
                         socket.Close(0);
 
@@ -2033,7 +2029,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.running;
+                return running;
             }
         }
 
@@ -2056,11 +2052,11 @@ namespace lib60870.CS104
                     socket.Disconnect(true);
 
                 }
-                    
+
 
                 socket.Close(0);
             }
-                
+
         }
 
         public void Close()
@@ -2137,13 +2133,23 @@ namespace lib60870.CS104
             fileClient.RequestFile(ca, ioa, nof, receiver);
         }
 
-
-        public override void SendFile (int ca, int ioa, NameOfFile nof, IFileProvider fileProvider)
+        public void GetFile(int ca, int ioa, NameOfFile nof, IFileReceiver receiver, int timeout)
         {
             if (fileClient == null)
-                fileClient = new FileClient (this, DebugLog);
+                fileClient = new FileClient(this, DebugLog);
 
-            fileClient.SendFile (ca, ioa, nof, fileProvider);
+            fileClient.Timeout = timeout;
+
+            fileClient.RequestFile(ca, ioa, nof, receiver);
+        }
+
+
+        public override void SendFile(int ca, int ioa, NameOfFile nof, IFileProvider fileProvider)
+        {
+            if (fileClient == null)
+                fileClient = new FileClient(this, DebugLog);
+
+            fileClient.SendFile(ca, ioa, nof, fileProvider);
         }
 
         public void GetDirectory(int ca)

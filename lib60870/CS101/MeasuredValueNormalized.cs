@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870.CS101
 {
     /// <summary>
@@ -79,27 +77,27 @@ namespace lib60870.CS101
                 else if (value < -1.0f)
                     value = -1.0f;
 
-                this.scaledValue.Value = (int)((value * 32767.5) - 0.5);
+                scaledValue.Value = (int)((value * 32767.5) - 0.5);
             }
         }
 
         public MeasuredValueNormalizedWithoutQuality(int objectAddress, float normalizedValue)
             : base(objectAddress)
         {
-            this.scaledValue = new ScaledValue();
-            this.NormalizedValue = normalizedValue;
+            scaledValue = new ScaledValue();
+            NormalizedValue = normalizedValue;
         }
 
         public MeasuredValueNormalizedWithoutQuality(MeasuredValueNormalizedWithoutQuality original)
             : base(original.ObjectAddress)
         {
-            this.scaledValue = new ScaledValue(original.scaledValue);
+            scaledValue = new ScaledValue(original.scaledValue);
         }
 
         public MeasuredValueNormalizedWithoutQuality(int objectAddress, short rawValue)
             : base(objectAddress)
         {
-            this.scaledValue = new ScaledValue(rawValue);
+            scaledValue = new ScaledValue(rawValue);
         }
 
         internal MeasuredValueNormalizedWithoutQuality(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -154,7 +152,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.quality;
+                return quality;
             }
         }
 
@@ -173,7 +171,7 @@ namespace lib60870.CS101
         public MeasuredValueNormalized(MeasuredValueNormalized original)
             : base(original)
         {
-            this.quality = new QualityDescriptor(original.quality);
+            quality = new QualityDescriptor(original.quality);
         }
 
         internal MeasuredValueNormalized(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -231,7 +229,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -251,7 +249,7 @@ namespace lib60870.CS101
         public MeasuredValueNormalizedWithCP24Time2a(MeasuredValueNormalizedWithCP24Time2a original)
             : base(original)
         {
-            this.timestamp = new CP24Time2a(original.timestamp);
+            timestamp = new CP24Time2a(original.timestamp);
         }
 
         internal MeasuredValueNormalizedWithCP24Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -309,7 +307,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -328,7 +326,7 @@ namespace lib60870.CS101
         public MeasuredValueNormalizedWithCP56Time2a(MeasuredValueNormalizedWithCP56Time2a original)
             : base(original)
         {
-            this.timestamp = new CP56Time2a(original.timestamp);
+            timestamp = new CP56Time2a(original.timestamp);
         }
 
         internal MeasuredValueNormalizedWithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)

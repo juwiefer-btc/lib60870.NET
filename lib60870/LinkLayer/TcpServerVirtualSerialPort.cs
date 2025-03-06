@@ -21,8 +21,8 @@
 
 using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace lib60870.linklayer
@@ -68,7 +68,7 @@ namespace lib60870.linklayer
         {
             get
             {
-                return this.debugOutput;
+                return debugOutput;
             }
             set
             {
@@ -82,8 +82,8 @@ namespace lib60870.linklayer
 
         public void SetConnectionRequestHandler(TcpConnectionEventHandler handler, object parameter)
         {
-            this.connectionEventHandler = handler;
-            this.connectionEventHandlerParameter = parameter;
+            connectionEventHandler = handler;
+            connectionEventHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -176,7 +176,7 @@ namespace lib60870.linklayer
                 IPEndPoint localEP = new IPEndPoint(ipAddress, localPort);
 
                 // Create a TCP/IP  socket.
-                listeningSocket = new Socket(AddressFamily.InterNetwork, 
+                listeningSocket = new Socket(AddressFamily.InterNetwork,
                     SocketType.Stream, ProtocolType.Tcp);
 
                 listeningSocket.Bind(localEP);

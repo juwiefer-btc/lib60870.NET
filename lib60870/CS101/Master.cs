@@ -21,14 +21,12 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870.CS101
 {
     /// <summary>
     /// Handler that is called when a new ASDU is received
     /// </summary>
-	public delegate bool ASDUReceivedHandler(object parameter,int slaveAddress,ASDU asdu);
+	public delegate bool ASDUReceivedHandler(object parameter, int slaveAddress, ASDU asdu);
 
     /// <summary>
     /// Common interface for CS104 and CS101 balanced and unbalanced master
@@ -42,7 +40,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.debugOutput;
+                return debugOutput;
             }
             set
             {
@@ -169,7 +167,7 @@ namespace lib60870.CS101
         /// <param name="ioa">IOA</param>
         /// <param name="nof">Name of file (file type)</param>
         /// <param name="fileProvider">File provider instance</param>
-        public abstract void SendFile (int ca, int ioa, NameOfFile nof, IFileProvider fileProvider);
+        public abstract void SendFile(int ca, int ioa, NameOfFile nof, IFileProvider fileProvider);
 
         /// <summary>
         /// Get the application layer parameters used by this master instance
@@ -191,6 +189,6 @@ namespace lib60870.CS101
         /// <param name="parameter">will be passed to the delegate</param>
         public abstract void SetSentRawMessageHandler(RawMessageHandler handler, object parameter);
     }
-		
+
 }
 

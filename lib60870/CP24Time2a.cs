@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
     public class CP24Time2a
@@ -65,7 +63,7 @@ namespace lib60870
             if (!(obj is CP24Time2a))
                 return false;
 
-            return (this.GetHashCode() == obj.GetHashCode());
+            return (GetHashCode() == obj.GetHashCode());
         }
 
         public override int GetHashCode()
@@ -113,7 +111,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set
@@ -196,7 +194,7 @@ namespace lib60870
         {
             return string.Format("[CP24Time2a: Millisecond={0}, Second={1}, Minute={2}, Invalid={3}, Substitued={4}]", Millisecond, Second, Minute, Invalid, Substitued);
         }
-		
+
     }
 }
 

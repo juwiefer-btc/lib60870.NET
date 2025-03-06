@@ -58,38 +58,38 @@ namespace lib60870.CS101
     /// <summary>
     /// Handler for interrogation command (C_IC_NA_1 - 100).
     /// </summary>
-	public delegate bool InterrogationHandler(object parameter,IMasterConnection connection,ASDU asdu,byte qoi);
+	public delegate bool InterrogationHandler(object parameter, IMasterConnection connection, ASDU asdu, byte qoi);
 
     /// <summary>
     /// Handler for counter interrogation command (C_CI_NA_1 - 101).
     /// </summary>
-	public delegate bool CounterInterrogationHandler(object parameter,IMasterConnection connection,ASDU asdu,byte qoi);
+	public delegate bool CounterInterrogationHandler(object parameter, IMasterConnection connection, ASDU asdu, byte qoi);
 
     /// <summary>
     /// Handler for read command (C_RD_NA_1 - 102)
     /// </summary>
-	public delegate bool ReadHandler(object parameter,IMasterConnection connection,ASDU asdu,int ioa);
+	public delegate bool ReadHandler(object parameter, IMasterConnection connection, ASDU asdu, int ioa);
 
     /// <summary>
     /// Handler for clock synchronization command (C_CS_NA_1 - 103)
     /// </summary>
-	public delegate bool ClockSynchronizationHandler(object parameter,IMasterConnection connection,ASDU asdu,CP56Time2a newTime);
+	public delegate bool ClockSynchronizationHandler(object parameter, IMasterConnection connection, ASDU asdu, CP56Time2a newTime);
 
     /// <summary>
     /// Handler for reset process command (C_RP_NA_1 - 105)
     /// </summary>
-	public delegate bool ResetProcessHandler(object parameter,IMasterConnection connection,ASDU asdu,byte  qrp);
+	public delegate bool ResetProcessHandler(object parameter, IMasterConnection connection, ASDU asdu, byte qrp);
 
     /// <summary>
     /// Handler for delay acquisition command (C_CD_NA:1 - 106)
     /// </summary>
-	public delegate bool DelayAcquisitionHandler(object parameter,IMasterConnection connection,ASDU asdu,CP16Time2a delayTime);
+	public delegate bool DelayAcquisitionHandler(object parameter, IMasterConnection connection, ASDU asdu, CP16Time2a delayTime);
 
 
     /// <summary>
     /// Handler for ASDUs that are not handled by other handlers (default handler)
     /// </summary>
-	public delegate bool ASDUHandler(object parameter,IMasterConnection connection,ASDU asdu);
+	public delegate bool ASDUHandler(object parameter, IMasterConnection connection, ASDU asdu);
 
     public abstract class Slave
     {
@@ -99,7 +99,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.debugOutput;
+                return debugOutput;
             }
             set
             {
@@ -125,7 +125,7 @@ namespace lib60870.CS101
         public DelayAcquisitionHandler delayAcquisitionHandler = null;
         public object delayAcquisitionHandlerParameter = null;
 
-        public  ASDUHandler asduHandler = null;
+        public ASDUHandler asduHandler = null;
         public object asduHandlerParameter = null;
 
         internal FileReadyHandler fileReadyHandler = null;
@@ -138,8 +138,8 @@ namespace lib60870.CS101
         /// <param name="parameter">user provided parameter that is passed to the callback</param>
         public void SetInterrogationHandler(InterrogationHandler handler, object parameter)
         {
-            this.interrogationHandler = handler;
-            this.InterrogationHandlerParameter = parameter;
+            interrogationHandler = handler;
+            InterrogationHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -149,8 +149,8 @@ namespace lib60870.CS101
         /// <param name="parameter">user provided parameter that is passed to the callback</param>
         public void SetCounterInterrogationHandler(CounterInterrogationHandler handler, object parameter)
         {
-            this.counterInterrogationHandler = handler;
-            this.counterInterrogationHandlerParameter = parameter;
+            counterInterrogationHandler = handler;
+            counterInterrogationHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -160,8 +160,8 @@ namespace lib60870.CS101
         /// <param name="parameter">user provided parameter that is passed to the callback</param>
         public void SetReadHandler(ReadHandler handler, object parameter)
         {
-            this.readHandler = handler;
-            this.readHandlerParameter = parameter;
+            readHandler = handler;
+            readHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -171,20 +171,20 @@ namespace lib60870.CS101
         /// <param name="parameter">user provided parameter that is passed to the callback</param>
         public void SetClockSynchronizationHandler(ClockSynchronizationHandler handler, object parameter)
         {
-            this.clockSynchronizationHandler = handler;
-            this.clockSynchronizationHandlerParameter = parameter;
+            clockSynchronizationHandler = handler;
+            clockSynchronizationHandlerParameter = parameter;
         }
 
         public void SetResetProcessHandler(ResetProcessHandler handler, object parameter)
         {
-            this.resetProcessHandler = handler;
-            this.resetProcessHandlerParameter = parameter;
+            resetProcessHandler = handler;
+            resetProcessHandlerParameter = parameter;
         }
 
         public void SetDelayAcquisitionHandler(DelayAcquisitionHandler handler, object parameter)
         {
-            this.delayAcquisitionHandler = handler;
-            this.delayAcquisitionHandlerParameter = parameter;
+            delayAcquisitionHandler = handler;
+            delayAcquisitionHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -195,8 +195,8 @@ namespace lib60870.CS101
         /// <param name="parameter">user provided parameter that is passed to the callback</param>
         public void SetASDUHandler(ASDUHandler handler, object parameter)
         {
-            this.asduHandler = handler;
-            this.asduHandlerParameter = parameter;
+            asduHandler = handler;
+            asduHandlerParameter = parameter;
         }
 
         /// <summary>
