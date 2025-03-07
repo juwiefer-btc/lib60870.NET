@@ -26,6 +26,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -574,60 +575,80 @@ namespace lib60870.CS104
                 if (isSentBufferFull())
                     return false;
 
-                int currentIndex = 0;
                 long timestamp;
+                int index;
 
-                BufferFrame asdu = highPrioQueue.GetNextWaitingASDU(out timestamp, out currentIndex);
+                highPrioQueue.LockASDUQueue();
 
-                if (asdu != null)
+                BufferFrame asdu = highPrioQueue.GetNextHighPriorityWaitingASDU(out timestamp, out index);
+
+                try
                 {
-
-
-                    if (oldestSentASDU == -1)
+                    if (asdu != null)
                     {
-                        oldestSentASDU = 0;
-                        newestSentASDU = 0;
+                        int currentIndex = 0;
 
+                        if (oldestSentASDU == -1)
+                        {
+                            oldestSentASDU = 0;
+                            newestSentASDU = 0;
+
+                        }
+                        else
+                        {
+                            currentIndex = (newestSentASDU + 1) % maxSentASDUs;
+                        }
+
+                        sentASDUs[currentIndex].entryTime = timestamp;
+                        sentASDUs[currentIndex].queueIndex = index;
+                        sentASDUs[currentIndex].seqNo = SendIMessage(asdu);
+                        sentASDUs[currentIndex].sentTime = SystemUtils.currentTimeMillis();
+
+                        newestSentASDU = currentIndex;
+
+                        PrintSendBuffer();
                     }
-                    else
-                    {
-                        currentIndex = (newestSentASDU + 1) % maxSentASDUs;
-                    }
-
-                    sentASDUs[currentIndex].queueIndex = -1;
-                    sentASDUs[currentIndex].entryTime = timestamp;
-                    sentASDUs[currentIndex].seqNo = SendIMessage(asdu);
-                    sentASDUs[currentIndex].sentTime = SystemUtils.currentTimeMillis();
-
-                    newestSentASDU = currentIndex;
-
-                    PrintSendBuffer();
                 }
-                else
-                    return false;
+                finally
+                {
+                    highPrioQueue.UnlockASDUQueue();
+                }
+              
             }
 
             return true;
         }
 
-        private void SendWaitingASDUs()
+        /// <summary>
+        ///  Send all high-priority ASDUs and the last waiting ASDU from the low-priority queue.
+        ///  Returns true if ASDUs are still waiting.This can happen when there are more ASDUs
+        ///  in the event (low-priority) buffer, or the connection is unavailable to send the high-priority
+        ///  ASDUs (congestion or connection lost).
+        /// </summary>
+        private bool SendWaitingASDUs()
         {
 
             lock (highPrioQueue)
             {
-
-                while (highPrioQueue.IsAsduAvailable())
+                /* send all available high priority ASDUs first */
+                while (highPrioQueue.IsHighPriorityAsduAvailable())
                 {
 
                     if (sendNextHighPriorityASDU() == false)
-                        return;
+                        return true;
 
                     if (running == false)
-                        return;
+                        return true;
                 }
             }
 
+            /* send messages from low-priority queue */
             sendNextAvailableASDU();
+
+            if (lowPrioQueue.NumberOfAsduInQueue > 0)
+                return true;
+            else
+                return false;
         }
 
         private void SendASDUInternal(ASDU asdu)

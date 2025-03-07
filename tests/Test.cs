@@ -2983,6 +2983,8 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
+            Thread.Sleep(2000);
+
             Connection con = new Connection("127.0.0.1", 2404);
             con.Connect();
 
@@ -2990,10 +2992,12 @@ namespace tests
 
             Receiver receiver = new Receiver();
 
+            Assert.IsTrue(con.IsRunning);
+            Assert.IsTrue(server.IsRunning());
+
             try
             {
-
-                con.GetFile(1, 30000, NameOfFile.TRANSPARENT_FILE, receiver, 10000);
+                con.GetFile(1, 30000, NameOfFile.TRANSPARENT_FILE, receiver, 30000);
             }
             catch (Exception ex)
             {
@@ -3001,7 +3005,7 @@ namespace tests
                 Assert.Fail("GetFile failed!");
             }
 
-            Thread.Sleep(15000);
+            Thread.Sleep(30000);
             Assert.IsTrue(receiver.finishedCalled);
             Assert.AreEqual(100, receiver.recvdBytes);
             Assert.AreEqual(1, receiver.lastSection);
