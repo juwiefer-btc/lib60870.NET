@@ -1944,7 +1944,18 @@ namespace lib60870.CS104
 
                         DebugLog("CLOSE CONNECTION!");
 
-                        // Release the socket.
+
+                        if (unconfirmedReceivedIMessages > 0)
+                        {
+                            /* confirm all unconfirmed messages before stopping the connection */
+
+                            lastConfirmationTime = SystemUtils.currentTimeMillis();
+
+                            unconfirmedReceivedIMessages = 0;
+                            timeoutT2Triggered = false;
+
+                            SendSMessage();
+                        }
 
 
                         running = false;
@@ -1954,7 +1965,6 @@ namespace lib60870.CS104
                         {
                             try
                             {
-                                //socket.Shutdown(SocketShutdown.Both);
                                 socket.Shutdown(SocketShutdown.Receive);
                             }
                             catch (SocketException ex)
@@ -2001,18 +2011,6 @@ namespace lib60870.CS104
             catch (Exception e)
             {
                 DebugLog(e.ToString());
-            }
-
-            if (unconfirmedReceivedIMessages > 0)
-            {
-                /* confirm all unconfirmed messages before stopping the connection */
-
-                lastConfirmationTime = SystemUtils.currentTimeMillis();
-
-                unconfirmedReceivedIMessages = 0;
-                timeoutT2Triggered = false;
-
-                SendSMessage();
             }
 
             conState = CS104_ConState.STATE_IDLE;
