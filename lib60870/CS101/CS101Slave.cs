@@ -108,7 +108,6 @@ namespace lib60870
 
             void ISecondaryApplicationLayer.ResetCUReceived(bool onlyFcb)
             {
-                //TODO delete data queues
                 lock (userDataClass1Queue)
                 {
                     userDataClass1Queue.Clear();

@@ -107,7 +107,7 @@ namespace lib60870.linklayer
             }
             catch (Exception)
             {
-                throw new SocketException(87); // wrong argument
+                throw new SocketException(87); /* wrong argument */
             }
 
             if (!running)

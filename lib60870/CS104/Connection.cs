@@ -1525,7 +1525,7 @@ namespace lib60870.CS104
             }
             catch (Exception)
             {
-                throw new SocketException(87); // wrong argument
+                throw new SocketException(87); /* wrong argument */
             }
 
             /* Create a TCP/IP  socket. */
@@ -1545,7 +1545,7 @@ namespace lib60870.CS104
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
-                    throw new SocketException(87); // wrong argument
+                    throw new SocketException(87); /* wrong argument */
                 }
             }
 
