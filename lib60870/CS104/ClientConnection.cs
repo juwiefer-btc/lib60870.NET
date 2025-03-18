@@ -104,7 +104,7 @@ namespace lib60870.CS104
         /* data structure for k-size sent ASDU buffer */
         private struct SentASDU
         {
-            // required to identify message in server (low-priority) queue
+            /* required to identify message in server (low-priority) queue */
             public long entryTime;
 
             /* -1 if ASDU is not from low-priority queue */
@@ -202,7 +202,6 @@ namespace lib60870.CS104
 
             receivedASDUs = new ConcurrentQueue<ASDU>();
             highPrioQueue = new ASDUQueue(server.MaxHighPrioQueueSize, server.EnqueueMode, alParameters, DebugLog);
-            //highPrioQueue = new Queue<BufferFrame>();
 
             socketStream = new NetworkStream(socket);
             this.socket = socket;
@@ -340,7 +339,7 @@ namespace lib60870.CS104
 
                 if (readState == 0)
                 {
-                    // wait for start byte
+                    /* wait for start byte */
                     if (socketStream.Read(buffer, 0, 1) != 1)
                         return -1;
 
@@ -356,7 +355,7 @@ namespace lib60870.CS104
 
                 if (readState == 1)
                 {
-                    // read length byte
+                    /* read length byte */
                     if (socketStream.Read(buffer, 1, 1) != 1)
                         return 0;
 
@@ -415,7 +414,6 @@ namespace lib60870.CS104
                 }
                 catch (System.IO.IOException)
                 {
-                    // socket error --> close connection
                     running = false;
                 }
             }
@@ -452,7 +450,6 @@ namespace lib60870.CS104
             }
             catch (System.IO.IOException)
             {
-                // socket error --> close connection
                 running = false;
             }
 
@@ -1062,7 +1059,7 @@ namespace lib60870.CS104
                 }
                 else
                 {
-                    // Two cases are required to reflect sequence number overflow
+                    /* Two cases are required to reflect sequence number overflow */
                     if (sentASDUs[oldestSentASDU].seqNo <= sentASDUs[newestSentASDU].seqNo)
                     {
                         if ((seqNo >= sentASDUs[oldestSentASDU].seqNo) &&
@@ -1215,7 +1212,7 @@ namespace lib60870.CS104
                         {
                             ASDU asdu = new ASDU(alParameters, buffer, 6, msgSize);
 
-                            // push to handler thread for processing
+                            /* push to handler thread for processing */
                             DebugLog("Enqueue received I-message for processing");
                             receivedASDUs.Enqueue(asdu);
                         }
@@ -1227,14 +1224,14 @@ namespace lib60870.CS104
                     }
                     else
                     {
-                        // connection not active
+                        /* connection not active */
                         DebugLog("Connection not active -> close connection");
 
                         return false;
                     }
                 }
 
-                // Check for TESTFR_ACT message
+                /* Check for TESTFR_ACT message */
                 else if ((buffer[2] & 0x43) == 0x43)
                 {
                     DebugLog("Send TESTFR_CON");
@@ -1242,7 +1239,7 @@ namespace lib60870.CS104
                     socketStream.Write(TESTFR_CON_MSG, 0, TESTFR_CON_MSG.Length);
                 }
 
-                // Check for STARTDT_ACT message
+                /* Check for STARTDT_ACT message */
                 else if ((buffer[2] & 0x07) == 0x07)
                 {
                     if (isActive == false)
@@ -1257,7 +1254,7 @@ namespace lib60870.CS104
                     socketStream.Write(STARTDT_CON_MSG, 0, TESTFR_CON_MSG.Length);
                 }
 
-                // Check for STOPDT_ACT message
+                /* Check for STOPDT_ACT message */
                 else if ((buffer[2] & 0x13) == 0x13)
                 {
                     DebugLog("Received STARTDT_ACT");
@@ -1301,7 +1298,7 @@ namespace lib60870.CS104
                     }
                 }
 
-                // Check for TESTFR_CON message
+                /* Check for TESTFR_CON message */
                 else if ((buffer[2] & 0x83) == 0x83)
                 {
                     DebugLog("Recv TESTFR_CON");
@@ -1311,7 +1308,7 @@ namespace lib60870.CS104
                     ResetT3Timeout(currentTime);
                 }
 
-                // S-message
+                /* S-message */
                 else if (buffer[2] == 0x01)
                 {
                     int seqNo = (buffer[4] + buffer[5] * 0x100) / 2;
@@ -1397,7 +1394,6 @@ namespace lib60870.CS104
                 {
                     DebugLog("Timeout for TESTFR_CON message");
 
-                    // close connection
                     return false;
                 }
             }
@@ -1569,7 +1565,7 @@ namespace lib60870.CS104
 
                         try
                         {
-                            // Receive the response from the remote device.
+                            /* Receive the response from the remote device */
                             int bytesRec = receiveMessage(bytes);
 
                             if (bytesRec > 0)
@@ -1620,8 +1616,6 @@ namespace lib60870.CS104
 
                     DebugLog("CLOSE CONNECTION!");
 
-                    // Release the socket.
-
                     socket.Shutdown(SocketShutdown.Both);
                     socket.Close();
 
@@ -1650,7 +1644,7 @@ namespace lib60870.CS104
                 DebugLog(e.ToString());
             }
 
-            // unmark unconfirmed messages in queue if k-buffer not empty
+            /* unmark unconfirmed messages in queue if k-buffer not empty */
             if (oldestSentASDU != -1)
                 lowPrioQueue.UnmarkAllASDUs();
 

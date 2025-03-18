@@ -1284,7 +1284,7 @@ namespace lib60870.CS104
 
                 if (readState == 0)
                 {
-                    // wait for start byte
+                    /* wait for start byte */
                     if (netStream.Read(buffer, 0, 1) != 1)
                         return -1;
 
@@ -1300,7 +1300,7 @@ namespace lib60870.CS104
 
                 if (readState == 1)
                 {
-                    // read length byte
+                    /* read length byte */
                     if (netStream.Read(buffer, 1, 1) != 1)
                         return 0;
 
@@ -1421,7 +1421,8 @@ namespace lib60870.CS104
                 uMessageTimeout = 0;
 
                 if (buffer[2] == 0x43)
-                { // Check for TESTFR_ACT message
+                { 
+                    /* Check for TESTFR_ACT message */
                     statistics.RcvdTestFrActCounter++;
                     DebugLog("RCVD TESTFR_ACT");
                     DebugLog("SEND TESTFR_CON");
@@ -1527,7 +1528,7 @@ namespace lib60870.CS104
                 throw new SocketException(87); // wrong argument
             }
 
-            // Create a TCP/IP  socket.
+            /* Create a TCP/IP  socket. */
             socket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
@@ -1566,7 +1567,7 @@ namespace lib60870.CS104
 
                     DebugLog("ObjectDisposedException -> Connect canceled");
 
-                    throw new SocketException(995); // WSA_OPERATION_ABORTED
+                    throw new SocketException(995); /* WSA_OPERATION_ABORTED */
                 }
             }
             else
@@ -1575,7 +1576,6 @@ namespace lib60870.CS104
                 {
                     try
                     {
-                        //socket.Shutdown(SocketShutdown.Both);
                         socket.Shutdown(SocketShutdown.Receive);
                     }
                     catch (SocketException ex)
@@ -1590,7 +1590,7 @@ namespace lib60870.CS104
                 socket.Close(0);
                 socket = null;
 
-                throw new SocketException(10060); // Connection timed out (WSAETiMEDOUT)
+                throw new SocketException(10060); /* Connection timed out (WSAETiMEDOUT) */
             }
         }
 
@@ -1605,7 +1605,6 @@ namespace lib60870.CS104
                 {
                     DebugLog("Timeout for TESTFR_CON message");
 
-                    // close connection
                     return false;
                 }
                 else
@@ -1740,7 +1739,7 @@ namespace lib60870.CS104
 
                     try
                     {
-                        // Connect to a remote device.
+                        /* Connect to a remote device. */
                         ConnectSocketWithTimeout();
 
                         DebugLog("Socket connected to " + socket.RemoteEndPoint.ToString());
@@ -1853,7 +1852,7 @@ namespace lib60870.CS104
 
                             try
                             {
-                                // Receive a message  from the remote device.
+                                /* Receive a message  from the remote device. */
                                 int bytesRec = receiveMessage(bytes);
 
                                 if (bytesRec > 0)
@@ -2039,7 +2038,6 @@ namespace lib60870.CS104
                 {
                     try
                     {
-                        //socket.Shutdown(SocketShutdown.Both);
                         socket.Shutdown(SocketShutdown.Receive);
                     }
                     catch (SocketException ex)

@@ -16,7 +16,9 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with lib60870.NET.  If not, see <http://
+ *  
+ *  www.gnu.org/licenses/>.
  *
  *  See COPYING file for the complete license text.
  */
@@ -419,7 +421,7 @@ namespace lib60870.CS101
                         if ((asdu.Ca == ca))
                         {
 
-                            // send first segment
+                            /* send first segment */
 
                             currentSectionOffset = 0;
 
@@ -772,7 +774,7 @@ namespace lib60870.CS101
                 }
             }
 
-            // Check for timeout
+            /* Check for timeout */
             if (state != FileClientState.IDLE)
             {
                 if (SystemUtils.currentTimeMillis() > lastSentTime + timeout)
@@ -1121,7 +1123,7 @@ namespace lib60870.CS101
                             ioa = fileReady.ObjectAddress;
                             nof = fileReady.NOF;
 
-                            // send call file
+                            /* send call file */
 
                             ASDU callFile = new ASDU(alParameters, CauseOfTransmission.FILE_TRANSFER, false, false, 0, asdu.Ca, false);
 
@@ -1154,7 +1156,7 @@ namespace lib60870.CS101
                         currentSectionOffset = 0;
                         currentSectionSize = sectionReady.LengthOfSection;
 
-                        // send call section
+                        /* send call section */
 
                         ASDU callSection = new ASDU(alParameters, CauseOfTransmission.FILE_TRANSFER, false, false, 0, ca, false);
 
@@ -1465,7 +1467,7 @@ namespace lib60870.CS101
 
                                     ASDU fileReady = new ASDU(alParameters, CauseOfTransmission.FILE_TRANSFER, false, false, 0, asdu.Ca, false);
 
-                                    // check if already selected
+                                    /* check if already selected */
                                     if (file.selectedBy == null)
                                     {
                                         file.selectedBy = this;
@@ -1592,7 +1594,7 @@ namespace lib60870.CS101
                                         if (currentSectionSize > 0)
                                         {
 
-                                            // send section ready with new section number
+                                            /* send section ready with new section number */
 
                                             ASDU sectionReady = new ASDU(alParameters, CauseOfTransmission.FILE_TRANSFER, false, false, 0, asdu.Ca, false);
 
@@ -1611,7 +1613,7 @@ namespace lib60870.CS101
                                         }
                                         else
                                         {
-                                            // send last section PDU
+                                            /* send last section PDU */
 
                                             ASDU lastSection = new ASDU(alParameters, CauseOfTransmission.FILE_TRANSFER, false, false, 0, asdu.Ca, false);
 
@@ -1709,7 +1711,7 @@ namespace lib60870.CS101
                         if (currentSectionOffset == currentSectionSize)
                         {
 
-                            // send last segment
+                            /* send last segment */
 
                             fileAsdu.AddInformationObject(
                                 new FileLastSegmentOrSection(file.GetIOA(), file.GetNameOfFile(),
@@ -1769,7 +1771,7 @@ namespace lib60870.CS101
                     }
                 }
 
-                // check for timeout
+                /* check for timeout */
                 if (SystemUtils.currentTimeMillis() > lastSentTime + timeout)
                 {
                     logger("Abort file transfer due to timeout");

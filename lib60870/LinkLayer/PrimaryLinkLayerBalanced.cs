@@ -36,7 +36,7 @@ namespace lib60870.linklayer
         private bool sendLinkLayerTestFunction = false;
         private bool nextFcb = true;
 
-        private BufferFrame lastSendASDU = null; // last send ASDU for message repetition after timeout
+        private BufferFrame lastSendASDU = null; /* last send ASDU for message repetition after timeout */
 
         private int linkLayerAddressOtherStation = 0;
 

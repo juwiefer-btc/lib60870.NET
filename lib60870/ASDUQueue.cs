@@ -187,7 +187,6 @@ namespace lib60870
 
                 while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
                 {
-                    // break if we reached the latest entry
                     if (currentIndex == latestQueueEntry)
                         break;
 
@@ -239,7 +238,6 @@ namespace lib60870
 
                 while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
                 {
-                    // break if we reached the latest entry
                     if (currentIndex == latestQueueEntry)
                         break;
 
@@ -353,7 +351,6 @@ namespace lib60870
                                 if (currentIndex < 0)
                                     currentIndex = maxQueueSize - 1;
 
-                                // break if we reached the first deleted entry again
                                 if (currentIndex == index)
                                     break;
 

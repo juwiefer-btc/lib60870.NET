@@ -106,7 +106,7 @@ namespace cs101_master_unbalanced
 				running = false;
 			};
 
-			string portName = "COM6";
+			string portName = "COM1";
 
 			if (args.Length > 0)
 				portName = args [0];

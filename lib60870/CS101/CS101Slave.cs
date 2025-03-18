@@ -123,8 +123,6 @@ namespace lib60870
 			 * END ISecondaryApplicationLayer
 			 ********************************************/
 
-            //			private bool sendLinkLayerTestFunction = false;
-
             private LinkLayer linkLayer = null;
 
             private byte[] buffer = new byte[300];
@@ -137,7 +135,7 @@ namespace lib60870
 
             private int linkLayerAddress = 0;
             private int linkLayerAddressOtherStation;
-            // link layer address of other station in balanced mode
+            /* link layer address of other station in balanced mode */
 
             private Queue<BufferFrame> userDataClass1Queue = new Queue<BufferFrame>();
             private int userDataClass1QueueMaxSize = 100;
