@@ -365,7 +365,8 @@ namespace lib60870.linklayer
                             else
                             {
                                 DebugLog("PLL - repeat last ASDU");
-                                linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, linkLayerAddressOtherStation, !nextFcb, true, lastSendASDU);
+                                if(lastSendASDU != null)
+                                    linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, linkLayerAddressOtherStation, !nextFcb, true, lastSendASDU);
                             }
 
                             lastSendTime = currentTime;
