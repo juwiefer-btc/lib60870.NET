@@ -67,17 +67,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return (float)(scaledValue.Value + 0.5) / (float)32767.5;
+                return scaledValue.GetNormalizedValue();
             }
             set
             {
-                /* Check value range */
-                if (value > 1.0f)
-                    value = 1.0f;
-                else if (value < -1.0f)
-                    value = -1.0f;
-
-                scaledValue.Value = (int)((value * 32767.5) - 0.5);
+                scaledValue.SetScaledFromNormalizedValue(value);
             }
         }
 

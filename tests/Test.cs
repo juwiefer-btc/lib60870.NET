@@ -3687,8 +3687,6 @@ namespace tests
             }
         }
 
-
-
         [Test()]
         public void TestSingleEventType()
         {
@@ -3703,6 +3701,49 @@ namespace tests
             Assert.AreEqual(0, qdp.EncodedValue);
         }
 
+        [Test()]
+        public void TestScaledNormalizedConversion()
+        {
+            const float SCALED_VALUE_MAX = 32767;
+            const float SCALED_VALUE_MIN = -32768;
+            const float NORMALIZED_VALUE_MAX = 32767.0f/32768.0f;
+
+            Assert.AreEqual(32767, new ScaledValue().ConvertNormalizedValueToScaled(NORMALIZED_VALUE_MAX));
+
+            Assert.AreEqual(32767, new ScaledValue().ConvertNormalizedValueToScaled(1.0f));
+
+            Assert.AreEqual(32767, new ScaledValue().ConvertNormalizedValueToScaled(2.0f));
+
+            Assert.AreEqual(-32768, new ScaledValue().ConvertNormalizedValueToScaled(-1.0f));
+
+            Assert.AreEqual(-32768, new ScaledValue().ConvertNormalizedValueToScaled(-2.0f));
+
+            Assert.AreEqual(0, new ScaledValue().ConvertNormalizedValueToScaled(0.0f));
+
+            Assert.AreEqual(0, new ScaledValue().ConvertNormalizedValueToScaled(-0.0f));
+
+            float normalizedUnit = (1f - NORMALIZED_VALUE_MAX);
+
+            /*Allow a small tolerance (0.0001f) in floating-point assertions.*/
+
+            Assert.AreEqual(NORMALIZED_VALUE_MAX - normalizedUnit, new ScaledValue(32766).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(NORMALIZED_VALUE_MAX, new ScaledValue(32767).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(NORMALIZED_VALUE_MAX, new ScaledValue(32768).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(NORMALIZED_VALUE_MAX, new ScaledValue(99999).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(-1.0f + (normalizedUnit * 2f), new ScaledValue(-32766).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(-1.0f + normalizedUnit, new ScaledValue(-32767).GetNormalizedValue(), 0.0001f);
+
+            Assert.AreEqual(-1.0f, new ScaledValue(-32768).GetNormalizedValue());
+
+            Assert.AreEqual(-1.0f, new ScaledValue(-32769).GetNormalizedValue());
+
+            Assert.AreEqual(0.0f, new ScaledValue(0).GetNormalizedValue());
+        }
 
     }
 }
