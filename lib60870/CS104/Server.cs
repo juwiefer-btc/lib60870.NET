@@ -544,62 +544,6 @@ namespace lib60870.CS104
             return count;
         }
 
-        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup = null)
-        {
-            if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
-            {
-                foreach (ClientConnection connection in allOpenConnections)
-                {
-                    if (connection.IsActive)
-                    {
-                        return GetEntryCount(connection.GetASDUQueue());
-
-                    }
-                }
-            }
-
-            else if (serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
-            {
-                if (redundancyGroup != null)
-                {
-                    return GetEntryCount(redundancyGroup.asduQueue);
-                }
-
-                else
-                {
-                    return -1;
-                }
-            }
-
-            else
-            {
-                RedundancyGroup singleGroup = redGroups[0];
-                return GetEntryCount(singleGroup.asduQueue);
-            }
-
-
-            return 0;
-        }
-
-        private int GetEntryCount(ASDUQueue queue)
-        {
-            int count = 0;
-
-            if (queue != null)
-            {
-                try
-                {
-                    count = queue.NumberOfAsduInQueue;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-            }
-
-            return count;
-        }
-
         /// <summary>
         /// Returns the number of elements in the low priority queue
         /// </summary>
