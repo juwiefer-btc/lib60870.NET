@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace tests
 {
+
     class TestInteger32Object : InformationObject, IPrivateIOFactory
     {
         private int value = 0;
@@ -84,14 +85,29 @@ namespace tests
         }
     }
 
-
-
     [TestFixture()]
     public class Test
     {
+        private int port = 24000;
+        private static readonly object _lockObject = new object();
+
+        private int GetPort()
+        {
+            int newPort;
+
+            lock (_lockObject)
+            {
+                port++;
+                newPort = port;
+            }
+
+            return newPort;
+        }
+
         [Test()]
         public void TestStatusAndStatusChangedDetection()
         {
+
             StatusAndStatusChangeDetection scd = new StatusAndStatusChangeDetection();
 
             Assert.AreEqual(false, scd.ST(0));
@@ -788,7 +804,8 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             server.Start();
 
@@ -820,7 +837,7 @@ namespace tests
 
             Thread.Sleep(1000); // Ensure processing time
 
-            Connection connection = new Connection("127.0.0.1", 2404, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", port, apciParameters, parameters);
 
             connection.SetASDUReceivedHandler(EventQueue1_asduReceivedHandler, info);
 
@@ -889,11 +906,12 @@ namespace tests
 
             Server server = new Server(apciParameters, parameters);
 
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", port, apciParameters, parameters);
 
             ConnectionException se = null;
 
@@ -1051,11 +1069,12 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
 
             Assert.NotNull(con);
 
@@ -1089,11 +1108,13 @@ namespace tests
 
             server.ServerMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
 
             Assert.NotNull(con);
 
@@ -1798,12 +1819,12 @@ namespace tests
             clientApciParamters.T3 = 1;
 
             Server server = new Server(serverApciParamters, serverParameters);
-
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
             server.DebugOutput = true;
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", port, clientApciParamters, clientParameters);
 
             connection.Connect();
 
@@ -1869,12 +1890,12 @@ namespace tests
             clientApciParamters.T3 = 1;
 
             Server server = new Server(serverApciParamters, serverParameters);
-
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", port, clientApciParamters, clientParameters);
 
             connection.Connect();
 
@@ -1942,12 +1963,12 @@ namespace tests
             serverApciParamters.T3 = 1;
 
             Server server = new Server(serverApciParamters, serverParameters);
-
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404, clientApciParamters, clientParameters);
+            Connection connection = new Connection("127.0.0.1", port, clientApciParamters, clientParameters);
 
             connection.DebugOutput = true;
             connection.SetReceivedRawMessageHandler(testSendTestFRTimeoutSlaveRawMessageHandler, null);
@@ -1993,7 +2014,9 @@ namespace tests
         public void TestEncodeDecodeSetpointCommandNormalized()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
 
             float recvValue = 0f;
             float sendValue = 1.0f;
@@ -2014,7 +2037,7 @@ namespace tests
             }, null);
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404);
+            Connection connection = new Connection("127.0.0.1", port);
             connection.Connect();
 
             ASDU newAsdu = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.ACTIVATION, false, false, 0, 1, false);
@@ -2035,7 +2058,9 @@ namespace tests
         public void TestEncodeDecodePrivateInformationObject()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
 
             server.DebugOutput = true;
 
@@ -2063,7 +2088,7 @@ namespace tests
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404);
+            Connection connection = new Connection("127.0.0.1", port);
             connection.Connect();
 
             ASDU newAsdu = new ASDU(server.GetApplicationLayerParameters(), CauseOfTransmission.ACTIVATION, false, false, 0, 1, false);
@@ -2266,7 +2291,9 @@ namespace tests
             newAsdu.AddInformationObject(spi);
 
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
 
             bool hasReceived = false;
 
@@ -2287,7 +2314,7 @@ namespace tests
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 2404);
+            Connection connection = new Connection("127.0.0.1", port);
             connection.Connect();
 
             connection.SendASDU(newAsdu);
@@ -2969,7 +2996,9 @@ namespace tests
         public void TestFileUploadSingleSection()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -2985,7 +3014,7 @@ namespace tests
 
             Thread.Sleep(2000);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
 
             Thread.Sleep(2000);
@@ -3024,7 +3053,9 @@ namespace tests
         public void TestFileUploadMultipleSections()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -3044,7 +3075,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
 
 
@@ -3071,7 +3102,8 @@ namespace tests
         public void TestFileUploadMultipleSectionsFreeFileName()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, (NameOfFile)12);
@@ -3091,7 +3123,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
 
 
@@ -3118,7 +3150,8 @@ namespace tests
         public void TestFileUploadMultipleSegments()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
             server.Start();
 
             SimpleFile file = new SimpleFile(1, 30000, NameOfFile.TRANSPARENT_FILE);
@@ -3132,7 +3165,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
 
 
@@ -3162,7 +3195,8 @@ namespace tests
         public void TestFileDownloadSingleSection()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
             server.DebugOutput = true;
 
             Receiver receiver = new Receiver();
@@ -3184,7 +3218,7 @@ namespace tests
             file.AddSection(fileData);
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
             Thread.Sleep(2000);
 
@@ -3219,7 +3253,8 @@ namespace tests
         public void TestFileDownloadMultipleSegments()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             Receiver receiver = new Receiver();
 
@@ -3243,7 +3278,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
             Thread.Sleep(2000);
 
@@ -3279,7 +3314,8 @@ namespace tests
         public void TestFileDownloadMultipleSegmentsMultipleSections()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
             Receiver receiver = new Receiver();
 
             server.SetFileReadyHandler(delegate (object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile)
@@ -3306,7 +3342,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
             Thread.Sleep(2000);
 
@@ -3332,7 +3368,8 @@ namespace tests
         public void TestFileDownloadSlaveRejectsFile()
         {
             Server server = new Server();
-            server.SetLocalPort(2404);
+            int port = GetPort();
+            server.SetLocalPort(port);
 
             Receiver receiver = new Receiver();
 
@@ -3354,7 +3391,7 @@ namespace tests
 
             server.GetAvailableFiles().AddFile(file);
 
-            Connection con = new Connection("127.0.0.1", 2404);
+            Connection con = new Connection("127.0.0.1", port);
             con.Connect();
             Thread.Sleep(2000);
 
@@ -3473,7 +3510,7 @@ namespace tests
             server.MaxOpenConnections = 6;
 
             server.EnqueueMode = EnqueueMode.REMOVE_OLDEST;
-
+            server.SetLocalPort(GetPort());
             server.Start();
 
             int waitTime = 1000;
@@ -3531,6 +3568,7 @@ namespace tests
         public void TestMultipleRedundancyGroup()
         {
             bool running = true;
+            int port = GetPort();
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
             {
@@ -3559,6 +3597,7 @@ namespace tests
             server.AddRedundancyGroup(redGroup);
 
             server.EnqueueMode = EnqueueMode.REMOVE_OLDEST;
+            server.SetLocalPort(port);
 
             server.Start();
 
@@ -3704,9 +3743,7 @@ namespace tests
         [Test()]
         public void TestScaledNormalizedConversion()
         {
-            const float SCALED_VALUE_MAX = 32767;
-            const float SCALED_VALUE_MIN = -32768;
-            const float NORMALIZED_VALUE_MAX = 32767.0f/32768.0f;
+            const float NORMALIZED_VALUE_MAX = 32767.0f / 32768.0f;
 
             Assert.AreEqual(32767, new ScaledValue().ConvertNormalizedValueToScaled(NORMALIZED_VALUE_MAX));
 
