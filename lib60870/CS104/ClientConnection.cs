@@ -128,11 +128,20 @@ namespace lib60870.CS104
 
         private FileServer fileServer;
 
+        /// <summary>
+        /// Retrieves the ASDU queue used for processing ASDUs in the system. This queue holds the low-priority ASDUs for further handling.
+        /// </summary>
+        /// <returns>
+        /// The ASDU queue containing low-priority ASDUs.
+        /// </returns>
         internal ASDUQueue GetASDUQueue()
         {
             return lowPrioQueue;
         }
 
+        /// <summary>
+        /// Continuously processes the received ASDUs in a separate callback thread. The method dequeues ASDUs from the queue and handles them using the `HandleASDU` method.
+        /// </summary>
         private void ProcessASDUs()
         {
             callbackThreadRunning = true;
@@ -181,6 +190,16 @@ namespace lib60870.CS104
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClientConnection"/> class, establishing a connection using the provided socket and configuration details.
+        /// </summary>
+        /// <param name="socket">The socket used for the connection, representing the network connection with the client.</param>
+        /// <param name="tlsSecInfo">The TLS security information used to manage the security of the connection, including certificates and chain validation.</param>
+        /// <param name="apciParameters">The parameters related to the Application Protocol Control Information (APCI), such as the sequence numbers and connection settings.</param>
+        /// <param name="parameters">The application layer parameters for the communication, including configuration for encoding/decoding data.</param>
+        /// <param name="server">The server object that manages the overall communication and handles requests related to files and ASDUs.</param>
+        /// <param name="asduQueue">The ASDU queue that holds the low-priority ASDUs for processing in the connection.</param>
+        /// <param name="debugOutput">A flag indicating whether debug output should be enabled for logging the connection's activities.</param>
         internal ClientConnection(Socket socket, TlsSecurityInformation tlsSecInfo, APCIParameters apciParameters, ApplicationLayerParameters parameters, Server server, ASDUQueue asduQueue, bool debugOutput)
         {
             state = MasterConnectionState.M_CON_STATE_STOPPED;
@@ -228,11 +247,22 @@ namespace lib60870.CS104
             return alParameters;
         }
 
+        /// <summary>
+        /// Resets the T3 timeout value based on the current system time.
+        /// </summary>
+        /// <param name="currentTime">The current time in milliseconds, used to set the next T3 timeout.</param>
         private void ResetT3Timeout(UInt64 currentTime)
         {
             nextT3Timeout = (UInt64)SystemUtils.currentTimeMillis() + (UInt64)(apciParameters.T3 * 1000);
         }
 
+        /// <summary>
+        /// Checks whether the T3 timeout has occurred based on the current system time.
+        /// </summary>
+        /// <param name="currentTime">The current time in milliseconds, used to compare with the next T3 timeout.</param>
+        /// <returns>
+        /// <c>true</c> if the T3 timeout has occurred; otherwise, <c>false</c>.
+        /// </returns>
         private bool CheckT3Timeout(UInt64 currentTime)
         {
             if (waitingForTestFRcon)
@@ -250,11 +280,22 @@ namespace lib60870.CS104
                 return false;
         }
 
+        /// <summary>
+        /// Resets the Test Frame Reception Confirmation (TestFRCon) timeout value based on the current system time.
+        /// </summary>
+        /// <param name="currentTime">The current time in milliseconds, used to set the next TestFRCon timeout.</param>
         private void ResetTestFRConTimeout(UInt64 currentTime)
         {
             nextTestFRConTimeout = currentTime + (UInt64)(apciParameters.T1 * 1000);
         }
 
+        /// <summary>
+        /// Checks whether the Test Frame Reception Confirmation (TestFRCon) timeout has occurred based on the current system time.
+        /// </summary>
+        /// <param name="currentTime">The current time in milliseconds, used to compare with the next TestFRCon timeout.</param>
+        /// <returns>
+        /// <c>true</c> if the TestFRCon timeout has occurred; otherwise, <c>false</c>.
+        /// </returns>
         private bool CheckTestFRConTimeout(UInt64 currentTime)
         {
             if (nextTestFRConTimeout > (currentTime + (UInt64)(apciParameters.T1 * 1000)))
@@ -322,6 +363,9 @@ namespace lib60870.CS104
         private int remainingReadLength = 0;
         private long currentReadTimeout = 0;
 
+        /// <summary>
+        /// Receives a message from the socket stream, handling timeout and message parsing.
+        /// </summary>
         private int receiveMessage(byte[] buffer)
         {
             /* check receive timeout */
@@ -392,6 +436,9 @@ namespace lib60870.CS104
             return 0;
         }
 
+        /// <summary>
+        /// Sends an S message via the socket stream.
+        /// </summary>
         private void SendSMessage()
         {
             DebugLog("Send S message");
@@ -419,6 +466,13 @@ namespace lib60870.CS104
             }
         }
 
+        /// <summary>
+        /// Sends an I message containing the ASDU via the socket stream.
+        /// </summary>
+        /// <param name="asdu">The ASDU object containing the message data to be sent.</param>
+        /// <returns>
+        /// The updated send count, which is incremented after sending the message.
+        /// </returns>
         private int SendIMessage(BufferFrame asdu)
         {
 
@@ -456,7 +510,13 @@ namespace lib60870.CS104
             return sendCount;
         }
 
-
+        /// <summary>
+        /// Checks if there are any unconfirmed messages in the low-priority or high-priority queues.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if there are unconfirmed messages in either the low-priority or high-priority queues; 
+        /// <c>false</c> if no unconfirmed messages are found.
+        /// </returns>
         public bool MasterConnection_hasUnconfirmedMessages()
         {
             bool retVal = false;
@@ -473,6 +533,13 @@ namespace lib60870.CS104
             return retVal;
         }
 
+        /// <summary>
+        /// Checks whether the sent ASDU buffer is full.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if the sent ASDU buffer is full; 
+        /// <c>false</c> if the buffer is not full.
+        /// </returns>
         private bool isSentBufferFull()
         {
 
@@ -487,6 +554,9 @@ namespace lib60870.CS104
                 return false;
         }
 
+        /// <summary>
+        /// Prints the contents of the sent ASDU buffer for debugging purposes.
+        /// </summary>
         private void PrintSendBuffer()
         {
             if (debugOutput)
@@ -518,6 +588,9 @@ namespace lib60870.CS104
             }
         }
 
+        /// <summary>
+        /// Sends the next available ASDU from the low-priority queue, if the sent ASDU buffer is not full.
+        /// </summary>
         private void sendNextAvailableASDU()
         {
             lock (sentASDUs)
@@ -565,6 +638,13 @@ namespace lib60870.CS104
             }
         }
 
+        /// <summary>
+        /// Sends the next available high-priority ASDU from the high-priority queue, if the sent ASDU buffer is not full.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if a high-priority ASDU was successfully sent; 
+        /// <c>false</c> if the sent ASDU buffer is full and no message was sent.
+        /// </returns>
         private bool sendNextHighPriorityASDU()
         {
             lock (sentASDUs)
@@ -648,6 +728,12 @@ namespace lib60870.CS104
                 return false;
         }
 
+        /// <summary>
+        /// Encodes and enqueues an ASDU for transmission, then attempts to send any waiting ASDUs.
+        /// </summary>
+        /// <param name="asdu">
+        /// The ASDU to be encoded and enqueued for sending.
+        /// </param>
         private void SendASDUInternal(ASDU asdu)
         {
             if (isActive)
@@ -679,6 +765,15 @@ namespace lib60870.CS104
                 throw new ConnectionException("Connection not active");
         }
 
+        /// <summary>
+        /// Sends an Activation Confirmation (ACT_CON) ASDU with the specified negative flag.
+        /// </summary>
+        /// <param name="asdu">
+        /// The ASDU to be sent as an Activation Confirmation (ACT_CON).
+        /// </param>
+        /// <param name="negative">
+        /// A boolean flag indicating whether the Activation Confirmation is negative.
+        /// </param>
         public void SendACT_CON(ASDU asdu, bool negative)
         {
             asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
@@ -687,6 +782,12 @@ namespace lib60870.CS104
             SendASDU(asdu);
         }
 
+        /// <summary>
+        /// Sends an Activation Termination (ACT_TERM) ASDU with a negative flag set to false.
+        /// </summary>
+        /// <param name="asdu">
+        /// The ASDU to be sent as an Activation Termination (ACT_TERM).
+        /// </param>
         public void SendACT_TERM(ASDU asdu)
         {
             asdu.Cot = CauseOfTransmission.ACTIVATION_TERMINATION;
@@ -695,6 +796,13 @@ namespace lib60870.CS104
             SendASDU(asdu);
         }
 
+        // <summary>
+        /// Handles the received ASDU (Application Service Data Unit) based on its TypeID and Cause of Transmission (COT).
+        /// It processes various commands such as interrogation, counter interrogation, read, clock synchronization, test, and reset commands.
+        /// </summary>
+        /// <param name="asdu">
+        /// The ASDU received that needs to be processed.
+        /// </param>
         private void HandleASDU(ASDU asdu)
         {
             DebugLog("Handle received ASDU");
@@ -1042,6 +1150,16 @@ namespace lib60870.CS104
 
         }
 
+        /// <summary>
+        /// Checks if the given sequence number is valid based on the sequence numbers of previously sent ASDUs.
+        /// This method ensures that the sequence numbers follow the correct order and handles the possibility of a sequence number overflow.
+        /// </summary>
+        /// <param name="seqNo">
+        /// The sequence number to be checked for validity.
+        /// </param>
+        /// <returns>
+        /// Returns <c>true</c> if the sequence number is valid; otherwise, <c>false</c> if it is out of range or invalid.
+        /// </returns>
         private bool CheckSequenceNumber(int seqNo)
         {
             lock (sentASDUs)
@@ -1145,6 +1263,21 @@ namespace lib60870.CS104
             return true;
         }
 
+        /// <summary>
+        /// Processes an incoming message based on its type and takes appropriate actions according to the message content.
+        /// This method handles different types of messages, such as I-message, TESTFR_ACT, STARTDT_ACT, STOPDT_ACT, 
+        /// and S-message, as well as error handling and state transitions of the connection.
+        /// </summary>
+        /// <param name="buffer">
+        /// The byte array containing the incoming message to be processed.
+        /// </param>
+        /// <param name="msgSize">
+        /// The size of the incoming message (in bytes).
+        /// </param>
+        /// <returns>
+        /// Returns <c>true</c> if the message was processed successfully; otherwise, <c>false</c> if the message was invalid
+        /// or if an error occurred while processing it.
+        /// </returns>
         private bool HandleMessage(byte[] buffer, int msgSize)
         {
             UInt64 currentTime = (UInt64)SystemUtils.currentTimeMillis();
@@ -1364,6 +1497,15 @@ namespace lib60870.CS104
             }
         }
 
+        /// <summary>
+        /// Handles various timeout conditions in the communication process, such as T3 timeouts, TESTFR_CON timeouts, 
+        /// and I-message timeouts. It checks for timeouts, sends necessary messages (such as TESTFR_ACT or S-message), 
+        /// and ensures the connection is managed correctly based on timeout events.
+        /// </summary>
+        /// <returns>
+        /// Returns <c>true</c> if no timeouts were detected or handled successfully, otherwise returns <c>false</c> 
+        /// if a timeout condition was detected and the connection should be closed or processed further.
+        /// </returns>
         private bool handleTimeouts()
         {
             UInt64 currentTime = (UInt64)SystemUtils.currentTimeMillis();
@@ -1429,6 +1571,18 @@ namespace lib60870.CS104
             return true;
         }
 
+        /// <summary>
+        /// Compares two byte arrays for equality by checking if they are of the same length and if each byte in the arrays is equal.
+        /// </summary>
+        /// <param name="array1">
+        /// The first byte array to be compared.
+        /// </param>
+        /// <param name="array2">
+        /// The second byte array to be compared.
+        /// </param>
+        /// <returns>
+        /// Returns <c>true</c> if the byte arrays are equal (same length and same content), otherwise returns <c>false</c>.
+        /// </returns>
         private bool AreByteArraysEqual(byte[] array1, byte[] array2)
         {
             if (array1.Length == array2.Length)
@@ -1446,6 +1600,26 @@ namespace lib60870.CS104
                 return false;
         }
 
+        /// <summary>
+        /// Callback method to handle certificate validation in SSL/TLS communication. It checks various conditions 
+        /// such as certificate chain validation, specific certificate validation, and SSL policy errors to determine
+        /// whether the certificate is valid for the current connection.
+        /// </summary>
+        /// <param name="sender">
+        /// The source of the event. This is typically the SSL/TLS connection.
+        /// </param>
+        /// <param name="cert">
+        /// The certificate being validated.
+        /// </param>
+        /// <param name="chain">
+        /// The certificate chain associated with the certificate.
+        /// </param>
+        /// <param name="sslPolicyErrors">
+        /// The SSL policy errors that occurred during certificate validation.
+        /// </param>
+        /// <returns>
+        /// Returns <c>true</c> if the certificate is considered valid based on the specified criteria; otherwise, returns <c>false</c>.
+        /// </returns>
         public bool CertificateValidationCallback(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (sslPolicyErrors == SslPolicyErrors.None || sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors)
@@ -1488,6 +1662,10 @@ namespace lib60870.CS104
                 return false;
         }
 
+        /// <summary>
+        /// Handles the connection lifecycle, including setting up the SSL/TLS connection, 
+        /// receiving and processing messages, managing timeouts, and closing the connection.
+        /// </summary>
         private void HandleConnection()
         {
             byte[] bytes = new byte[300];
