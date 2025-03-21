@@ -1,9 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  bgcolor="transparent";
-  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
-  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
-  rankdir="LR";
-  Node0 [id="Node000000",label="lib60870.CS101.QualityDescriptorP",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classlib60870_1_1_c_s101_1_1_quality_descriptor_p.html",tooltip="QDP - Quality descriptor for events of protection equipment according to IEC 60870-5-101:2003 7...."];
-}
