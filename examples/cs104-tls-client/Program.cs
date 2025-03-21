@@ -126,8 +126,7 @@ namespace cs104_tls_client
                 Console.WriteLine("Using hostname: " + hostname);
             }
 
-
-			Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
+            Console.WriteLine ("Using lib60870.NET version " + LibraryCommon.GetLibraryVersionString ());
 
 			// Own certificate has to be a pfx file that contains the private key
 			X509Certificate2 ownCertificate = new X509Certificate2 ("client1.pfx");
@@ -142,18 +141,20 @@ namespace cs104_tls_client
 			secInfo.AddCA (new X509Certificate2 ("root.cer"));
 
 			// Check if the certificate is signed by a provided CA
-			secInfo.ChainValidation = true;
+			secInfo.ChainValidation = false;
+
+			secInfo.TlsVersion = SslProtocols.Tls13;
 
 			// Check that the shown server certificate is in the list of allowed certificates
 			secInfo.AllowOnlySpecificCertificates = true;
 
-			Connection con = new Connection (hostname);
+			Connection con = new Connection (hostname, 19998);
 
-			// Set security information object, this will force the connection using TLS (using TCP port 19998)
-			con.SetTlsSecurity (secInfo);
+            // Set security information object, this will force the connection using TLS (using TCP port 19998)
+            con.SetTlsSecurity (secInfo);
 
 			con.DebugOutput = true;
-
+			
 			con.SetASDUReceivedHandler (asduReceivedHandler, null);
 			con.SetConnectionHandler (ConnectionHandler, null);
 
@@ -179,7 +180,6 @@ namespace cs104_tls_client
 			/* Synchronize clock of the controlled station */
 			con.SendClockSyncCommand (1 /* CA */, new CP56Time2a (DateTime.Now)); 
 
-
 			Console.WriteLine ("CLOSE");
 
 			con.Close ();
@@ -189,7 +189,6 @@ namespace cs104_tls_client
 			con.Connect ();
 
 			Thread.Sleep (5000);
-
 
 			Console.WriteLine ("CLOSE 2");
 

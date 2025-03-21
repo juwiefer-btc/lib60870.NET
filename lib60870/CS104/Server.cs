@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016-2024 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -18,13 +18,13 @@
  *
  *  See COPYING file for the complete license text.
  */
-
+#define CONFIG_USE_SEMAPHORES
+using lib60870.CS101;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Collections.Generic;
-using lib60870.CS101;
 
 namespace lib60870.CS104
 {
@@ -35,7 +35,7 @@ namespace lib60870.CS104
     /// <param name="parameter">User provided parameter</param>
     /// <param name="ipAddress">IP address of the connecting client</param>
     /// <returns>true if the connection has to be accepted, false otherwise</returns>
-    public delegate bool ConnectionRequestHandler(object parameter,IPAddress ipAddress);
+    public delegate bool ConnectionRequestHandler(object parameter, IPAddress ipAddress);
 
     /// <summary>
     /// Connection events for the Server
@@ -55,7 +55,7 @@ namespace lib60870.CS104
         ACTIVE,
 
         /// <summary>
-        /// The connection enterend inactive state
+        /// The connection entered inactive state
         /// </summary>
         INACTIVE,
 
@@ -65,7 +65,8 @@ namespace lib60870.CS104
         CLOSED
     }
 
-    public delegate void ConnectionEventHandler(object parameter,ClientConnection connection, ClientConnectionEvent eventType);
+
+    public delegate void ConnectionEventHandler(object parameter, ClientConnection connection, ClientConnectionEvent eventType);
 
     /// <summary>
     /// Server mode (redundancy group support)
@@ -111,239 +112,6 @@ namespace lib60870.CS104
         THROW_EXCEPTION
     }
 
-    internal class ASDUQueue
-    {
-
-        private enum QueueEntryState
-        {
-            NOT_USED,
-            WAITING_FOR_TRANSMISSION,
-            SENT_BUT_NOT_CONFIRMED
-        }
-
-        private struct ASDUQueueEntry
-        {
-            public long entryTimestamp;
-            public BufferFrame asdu;
-            public QueueEntryState state;
-        }
-
-        // Queue for messages (ASDUs)
-        private ASDUQueueEntry[] enqueuedASDUs = null;
-        private int oldestQueueEntry = -1;
-        private int latestQueueEntry = -1;
-        private int numberOfAsduInQueue = 0;
-        private int maxQueueSize;
-
-        private EnqueueMode enqueueMode;
-
-        private ApplicationLayerParameters parameters;
-
-        private Action<string> DebugLog = null;
-
-        public int NumberOfAsduInQueue { get => numberOfAsduInQueue; set => numberOfAsduInQueue = value; }
-
-        public ASDUQueue(int maxQueueSize, EnqueueMode enqueueMode, ApplicationLayerParameters parameters, Action<string> DebugLog)
-        {
-            enqueuedASDUs = new ASDUQueueEntry[maxQueueSize];
-
-            for (int i = 0; i < maxQueueSize; i++)
-            {
-                enqueuedASDUs[i].asdu = new BufferFrame(new byte[260], 6);
-                enqueuedASDUs[i].state = QueueEntryState.NOT_USED;
-            }
-
-            this.enqueueMode = enqueueMode;
-            this.oldestQueueEntry = -1;
-            this.latestQueueEntry = -1;
-            this.NumberOfAsduInQueue = 0;
-            this.maxQueueSize = maxQueueSize;
-            this.parameters = parameters;
-            this.DebugLog = DebugLog;
-        }
-
-        public void EnqueueAsdu(ASDU asdu)
-        {
-            lock (enqueuedASDUs)
-            {
-                if (oldestQueueEntry == -1)
-                {
-                    oldestQueueEntry = 0;
-                    latestQueueEntry = 0;
-                    NumberOfAsduInQueue = 1;
-
-                    enqueuedASDUs[0].asdu.ResetFrame();
-                    asdu.Encode(enqueuedASDUs[0].asdu, parameters);
-
-                    enqueuedASDUs[0].entryTimestamp = SystemUtils.currentTimeMillis();
-                    enqueuedASDUs[0].state = QueueEntryState.WAITING_FOR_TRANSMISSION;
-                }
-                else
-                {
-                    bool enqueue = true;
-
-                    if (NumberOfAsduInQueue == maxQueueSize)
-                    {
-                        if (enqueueMode == EnqueueMode.REMOVE_OLDEST)
-                        {
-                        }
-                        else if (enqueueMode == EnqueueMode.IGNORE)
-                        {
-                            DebugLog("Queue is full. Ignore new ASDU.");
-                            enqueue = false;
-                        }
-                        else if (enqueueMode == EnqueueMode.THROW_EXCEPTION)
-                        {
-                            throw new ASDUQueueException("Event queue is full.");
-                        }
-                    }
-
-                    if (enqueue)
-                    {
-                        latestQueueEntry = (latestQueueEntry + 1) % maxQueueSize;
-
-                        if (latestQueueEntry == oldestQueueEntry)
-                            oldestQueueEntry = (oldestQueueEntry + 1) % maxQueueSize;
-                        else
-                            NumberOfAsduInQueue++;
-
-                        enqueuedASDUs[latestQueueEntry].asdu.ResetFrame();
-                        asdu.Encode(enqueuedASDUs[latestQueueEntry].asdu, parameters);
-                        enqueuedASDUs[latestQueueEntry].entryTimestamp = SystemUtils.currentTimeMillis();
-                        enqueuedASDUs[latestQueueEntry].state = QueueEntryState.WAITING_FOR_TRANSMISSION;
-                    }
-                }
-            }
-
-            DebugLog("Queue contains " + NumberOfAsduInQueue + " messages (oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry + ")");
-        }
-
-        public void LockASDUQueue()
-        {
-            Monitor.Enter(enqueuedASDUs);
-        }
-
-        public void UnlockASDUQueue()
-        {
-            Monitor.Exit(enqueuedASDUs);
-        }
-
-        internal BufferFrame GetNextWaitingASDU(out long timestamp, out int index)
-        {
-            timestamp = 0;
-            index = -1;
-
-            if (enqueuedASDUs == null)
-                return null;
-
-            if (NumberOfAsduInQueue > 0)
-            {
-                int currentIndex = oldestQueueEntry;
-
-                while (enqueuedASDUs[currentIndex].state != QueueEntryState.WAITING_FOR_TRANSMISSION)
-                {
-
-                    if (enqueuedASDUs[currentIndex].state == QueueEntryState.NOT_USED)
-                        break;
-
-                    currentIndex = (currentIndex + 1) % maxQueueSize;
-
-                    // break if we reached the oldest entry again
-                    if (currentIndex == oldestQueueEntry)
-                        break;
-                }
-
-                if (enqueuedASDUs[currentIndex].state == QueueEntryState.WAITING_FOR_TRANSMISSION)
-                {
-                    enqueuedASDUs[currentIndex].state = QueueEntryState.SENT_BUT_NOT_CONFIRMED;
-                    timestamp = enqueuedASDUs[currentIndex].entryTimestamp;
-                    index = currentIndex;
-                    return enqueuedASDUs[currentIndex].asdu;
-                }
-
-                return null;
-            }
-
-            return null;
-        }
-
-        public void UnmarkAllASDUs()
-        {
-            lock (enqueuedASDUs)
-            {
-                if (NumberOfAsduInQueue > 0)
-                {
-                    for (int i = 0; i < enqueuedASDUs.Length; i++)
-                    {
-                        if (enqueuedASDUs[i].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
-                            enqueuedASDUs[i].state = QueueEntryState.WAITING_FOR_TRANSMISSION;
-                    }
-                }
-            }
-        }
-
-        public void MarkASDUAsConfirmed(int index, long timestamp)
-        {
-            if (enqueuedASDUs == null)
-                return;
-
-            if ((index < 0) || (index > enqueuedASDUs.Length))
-                return;
-
-            lock (enqueuedASDUs)
-            {
-                if (NumberOfAsduInQueue > 0)
-                {
-                    if (enqueuedASDUs[index].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
-                    {
-                        if (enqueuedASDUs[index].entryTimestamp == timestamp)
-                        {
-                            int currentIndex = index;
-
-                            while (enqueuedASDUs[currentIndex].state == QueueEntryState.SENT_BUT_NOT_CONFIRMED)
-                            {
-                                DebugLog("Remove from queue with index " + currentIndex);
-
-                                enqueuedASDUs[currentIndex].state = QueueEntryState.NOT_USED;
-                                enqueuedASDUs[currentIndex].entryTimestamp = 0;
-                                NumberOfAsduInQueue -= 1;
-
-                                if (NumberOfAsduInQueue == 0)
-                                {
-                                    oldestQueueEntry = -1;
-                                    latestQueueEntry = -1;
-               
-                                    break;
-                                }
-
-                                if (currentIndex == oldestQueueEntry)
-                                {
-                                    oldestQueueEntry = (index + 1) % maxQueueSize;
-
-                                    if (NumberOfAsduInQueue == 1)
-                                        latestQueueEntry = oldestQueueEntry;
-
-                                    break;
-                                }
-
-                                currentIndex = currentIndex - 1;
-
-                                if (currentIndex < 0)
-                                    currentIndex = maxQueueSize - 1;
-
-                                // break if we reached the first deleted entry again
-                                if (currentIndex == index)
-                                    break;
-                            }
-
-                            DebugLog("queue state: noASDUs: " + NumberOfAsduInQueue + " oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Representation of a redundancy group. A redundancy group is a group of connections that share a unique
     /// event queue. Only one connection in a redundancy group can be active.
@@ -364,6 +132,7 @@ namespace lib60870.CS104
         public RedundancyGroup()
         {
         }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="lib60870.CS104.RedundancyGroup"/> class.
@@ -427,6 +196,7 @@ namespace lib60870.CS104
         {
             connections.Add(connection);
         }
+
 
         internal void RemoveConnection(ClientConnection connection)
         {
@@ -512,13 +282,18 @@ namespace lib60870.CS104
         private Socket listeningSocket;
 
         private int maxQueueSize = 1000;
+        private int maxHighPrioQueueSize = 1000;
         private int maxOpenConnections = 10;
+
+        private static readonly SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
 
         internal int? fileTimeout = null;
 
         private int receiveTimeoutInMs = 1000; /* maximum allowed time between SOF byte and last message byte */
 
         private List<RedundancyGroup> redGroups = new List<RedundancyGroup>();
+
+
 
         private ServerMode serverMode = ServerMode.SINGLE_REDUNDANCY_GROUP;
 
@@ -531,6 +306,8 @@ namespace lib60870.CS104
             get { return serverMode; }
             set { serverMode = value; }
         }
+
+
 
         private EnqueueMode enqueueMode = EnqueueMode.REMOVE_OLDEST;
 
@@ -563,11 +340,28 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.maxQueueSize;
+                return maxQueueSize;
             }
             set
             {
                 maxQueueSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum size of the ASDU high priotity queue. Setting this property has no
+        /// effect after calling the Start method.
+        /// </summary>
+        /// <value>The size of the max  high priotity queue.</value>
+        public int MaxHighPrioQueueSize
+        {
+            get
+            {
+                return maxHighPrioQueueSize;
+            }
+            set
+            {
+                maxHighPrioQueueSize = value;
             }
         }
 
@@ -579,7 +373,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.maxOpenConnections;
+                return maxOpenConnections;
             }
             set
             {
@@ -618,8 +412,9 @@ namespace lib60870.CS104
         /// </summary>
         public Server()
         {
-            this.apciParameters = new APCIParameters();
-            this.alParameters = new ApplicationLayerParameters();
+            apciParameters = new APCIParameters();
+            alParameters = new ApplicationLayerParameters();
+
         }
 
         /// <summary>
@@ -628,13 +423,13 @@ namespace lib60870.CS104
         /// <param name="securityInfo">TLS layer configuation, or null when not using TLS</param>
         public Server(TlsSecurityInformation securityInfo)
         {
-            this.apciParameters = new APCIParameters();
-            this.alParameters = new ApplicationLayerParameters();
+            apciParameters = new APCIParameters();
+            alParameters = new ApplicationLayerParameters();
 
             this.securityInfo = securityInfo;
 
             if (securityInfo != null)
-                this.localPort = 19998;
+                localPort = 19998;
         }
 
         /// <summary>
@@ -660,7 +455,7 @@ namespace lib60870.CS104
             this.securityInfo = securityInfo;
 
             if (securityInfo != null)
-                this.localPort = 19998;
+                localPort = 19998;
         }
 
         /// <summary>
@@ -683,8 +478,8 @@ namespace lib60870.CS104
         /// <param name="parameter">Parameter.</param>
         public void SetConnectionRequestHandler(ConnectionRequestHandler handler, object parameter)
         {
-            this.connectionRequestHandler = handler;
-            this.connectionRequestHandlerParameter = parameter;
+            connectionRequestHandler = handler;
+            connectionRequestHandlerParameter = parameter;
         }
 
         private ConnectionEventHandler connectionEventHandler = null;
@@ -698,8 +493,8 @@ namespace lib60870.CS104
         /// <param name="parameter">Parameter.</param>
         public void SetConnectionEventHandler(ConnectionEventHandler handler, object parameter)
         {
-            this.connectionEventHandler = handler;
-            this.connectionEventHandlerParameter = parameter;
+            connectionEventHandler = handler;
+            connectionEventHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -710,7 +505,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.allOpenConnections.Count;
+                return allOpenConnections.Count;
             }
         }
 
@@ -721,12 +516,69 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.receiveTimeoutInMs;
+                return receiveTimeoutInMs;
             }
             set
             {
-                this.receiveTimeoutInMs = value;
+                receiveTimeoutInMs = value;
             }
+        }
+
+        private int GetEntryCount(ASDUQueue queue)
+        {
+            int count = 0;
+            if (queue != null)
+            {
+                try
+                {
+                    queueLock.Wait();
+                    count = queue.NumberOfAsduInQueue;
+                    queueLock.Release();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+
+            return count;
+        }
+
+        public int GetNumberOfQueueEntries(RedundancyGroup redundancyGroup = null)
+        {
+            if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
+            {
+                foreach (ClientConnection connection in allOpenConnections)
+                {
+                    if (connection.IsActive)
+                    {
+                        return GetEntryCount(connection.GetASDUQueue());
+
+                    }
+                }
+            }
+
+            else if (serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
+            {
+                if (redundancyGroup != null)
+                {
+                    return GetEntryCount(redundancyGroup.asduQueue);
+                }
+
+                else
+                {
+                    return -1;
+                }
+            }
+
+            else
+            {
+                RedundancyGroup singleGroup = redGroups[0];
+                return GetEntryCount(singleGroup.asduQueue);
+            }
+
+
+            return 0;
         }
 
         private int GetEntryCount(ASDUQueue queue)
@@ -804,8 +656,9 @@ namespace lib60870.CS104
                         DebugLog("New connection");
 
                         IPEndPoint ipEndPoint = (IPEndPoint)newSocket.RemoteEndPoint;
-          
+
                         DebugLog("  from IP: " + ipEndPoint.Address.ToString());
+
 
                         bool acceptConnection = true;
 
@@ -870,15 +723,18 @@ namespace lib60870.CS104
 
                                 CallConnectionEventHandler(connection, ClientConnectionEvent.OPENED);
                             }
+
                         }
                         else
                             newSocket.Close();
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     running = false;
+                    DebugLog("Exception: " + e.ToString());
                 }
+
             }
         }
 
@@ -904,7 +760,7 @@ namespace lib60870.CS104
         /// <param name="localAddress">Local IP address or hostname to bind.</param>
         public void SetLocalAddress(string localAddress)
         {
-            this.localHostname = localAddress;
+            localHostname = localAddress;
         }
 
         /// <summary>
@@ -913,7 +769,7 @@ namespace lib60870.CS104
         /// <param name="tcpPort">Local TCP port to bind.</param>
         public void SetLocalPort(int tcpPort)
         {
-            this.localPort = tcpPort;
+            localPort = tcpPort;
         }
 
         /// <summary>
@@ -924,8 +780,8 @@ namespace lib60870.CS104
             IPAddress ipAddress = IPAddress.Parse(localHostname);
             IPEndPoint localEP = new IPEndPoint(ipAddress, localPort);
 
-            // Create a TCP/IP socket.
-            listeningSocket = new Socket(AddressFamily.InterNetwork, 
+            // Create a TCP/IP  socket.
+            listeningSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
             listeningSocket.Bind(localEP);
@@ -948,7 +804,7 @@ namespace lib60870.CS104
                     redGroups.Add(singleGroup);
                 }
             }
-           
+
             if (serverMode == ServerMode.SINGLE_REDUNDANCY_GROUP || serverMode == ServerMode.MULTIPLE_REDUNDANCY_GROUPS)
             {
                 foreach (RedundancyGroup redGroup in redGroups)
@@ -993,6 +849,8 @@ namespace lib60870.CS104
             }
         }
 
+
+
         /// <summary>
         /// Check if the server is running (listening to client connections and handling connections) or not
         /// </summary>
@@ -1011,6 +869,9 @@ namespace lib60870.CS104
         /// <exception cref="lib60870.CS101.ASDUQueueException">when the ASDU queue is full and mode is EnqueueMode.THROW_EXCEPTION.</exception>
         public void EnqueueASDU(ASDU asdu)
         {
+            /*ASDUQueue queue = new ASDUQueue(MaxQueueSize, enqueueMode, alParameters, DebugLog);
+            this.lowPrioQueue = queue;*/
+
             if (serverMode == ServerMode.CONNECTION_IS_REDUNDANCY_GROUP)
             {
                 foreach (ClientConnection connection in allOpenConnections)
@@ -1032,8 +893,11 @@ namespace lib60870.CS104
 
         internal void CallConnectionEventHandler(ClientConnection connection, ClientConnectionEvent e)
         {
-            if (connectionEventHandler != null)
-                connectionEventHandler(connectionEventHandlerParameter, connection, e);
+            if (connection.State == MasterConnectionState.M_CON_STATE_STARTED)
+            {
+                if (connectionEventHandler != null)
+                    connectionEventHandler(connectionEventHandlerParameter, connection, e);
+            }
         }
 
         internal void Activated(ClientConnection activeConnection)
@@ -1048,11 +912,17 @@ namespace lib60870.CS104
                 }
 
             }
+
+            activeConnection.State = MasterConnectionState.M_CON_STATE_STARTED;
+
         }
 
         internal void Deactivated(ClientConnection activeConnection)
         {
+
             CallConnectionEventHandler(activeConnection, ClientConnectionEvent.INACTIVE);
+
+            activeConnection.State = MasterConnectionState.M_CON_STATE_UNCONFIRMED_STOPPED;
         }
 
         public override int FileTimeout
@@ -1071,4 +941,5 @@ namespace lib60870.CS104
             }
         }
     }
+
 }

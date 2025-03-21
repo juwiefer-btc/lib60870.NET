@@ -144,6 +144,9 @@ namespace cs104_client1
 
 			Connection con = new Connection ("127.0.0.1");
 
+			//con.LocalIpAddress = "192.168.2.244";
+			//con.LocalTcpPort = 22222;
+
 			con.DebugOutput = false;
 
 			con.SetASDUReceivedHandler (asduReceivedHandler, null);

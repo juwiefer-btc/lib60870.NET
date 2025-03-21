@@ -1,9 +1,5 @@
-﻿using System;
-using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
-using System.Net;
+﻿using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
-using System.Threading;
 
 using lib60870;
 using lib60870.CS101;
@@ -11,7 +7,7 @@ using lib60870.CS104;
 
 namespace cs104_tls_server
 {
-	class MainClass
+    class MainClass
 	{
 
 		private static bool interrogationHandler(object parameter, IMasterConnection connection, ASDU asdu, byte qoi)
@@ -110,7 +106,7 @@ namespace cs104_tls_server
 		{
 			bool running = true;
 
-			Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) {
+			Console.CancelKeyPress += delegate(object? sender, ConsoleCancelEventArgs e) {
 				e.Cancel = true;
 				running = false;
 			};
@@ -123,7 +119,7 @@ namespace cs104_tls_server
 
 			// Add allowed client certificates - not required when AllowOnlySpecificCertificates == false
 			secInfo.AddAllowedCertificate (new X509Certificate2 ("client1.cer"));
-			secInfo.AddAllowedCertificate (new X509Certificate2 ("client2.cer"));
+			//secInfo.AddAllowedCertificate (new X509Certificate2 ("client_CA1_2.pem"));
 
 			// Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
 			secInfo.AddCA (new X509Certificate2 ("root.cer"));
@@ -131,8 +127,11 @@ namespace cs104_tls_server
 			// Check if the certificate is signed by a provided CA
 			secInfo.ChainValidation = true;
 
-			// Check that the shown client certificate is in the list of allowed certificates
-			secInfo.AllowOnlySpecificCertificates = true;
+			// Allow only TLS versions 1.2 and 1.3
+			secInfo.TlsVersion = SslProtocols.Tls12 | SslProtocols.Tls13;
+
+            // Check that the shown client certificate is in the list of allowed certificates
+			secInfo.AllowOnlySpecificCertificates = false;
 
 			// Use constructor with security information object, this will force the connection using TLS (using TCP port 19998)
 			Server server = new Server (secInfo);

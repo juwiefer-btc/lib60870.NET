@@ -123,7 +123,7 @@ namespace cs104_redundancy_server
         {
             bool running = true;
 
-            Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) {
+            Console.CancelKeyPress += delegate(object? sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
                 running = false;
             };
