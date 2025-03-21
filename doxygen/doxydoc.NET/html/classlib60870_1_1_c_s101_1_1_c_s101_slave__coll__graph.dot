@@ -1,0 +1,16 @@
+digraph "lib60870.CS101.CS101Slave"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  Node1 [id="Node000001",label="lib60870.CS101.CS101Slave",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="CS 101 slave implementation (implements Slave interface)"];
+  Node2 -> Node1 [id="edge1_Node000001_Node000002",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="Slave",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",URL="$classlib60870_1_1_c_s101_1_1_slave.html",tooltip=" "];
+  Node3 -> Node2 [id="edge2_Node000002_Node000003",dir="back",color="darkorchid3",style="dashed",tooltip=" ",label=" filesAvailable",fontcolor="grey" ];
+  Node3 [id="Node000003",label="lib60870.CS101.FilesAvailable",height=0.2,width=0.4,color="gray40", fillcolor="white", style="filled",URL="$classlib60870_1_1_c_s101_1_1_files_available.html",tooltip="Represents the available files in a file client or file server."];
+  Node4 -> Node1 [id="edge3_Node000001_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="ISecondaryApplicationLayer",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node1 [id="edge4_Node000001_Node000005",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="IMasterConnection",height=0.2,width=0.4,color="gray40", fillcolor="white", style="filled",URL="$interfacelib60870_1_1_c_s101_1_1_i_master_connection.html",tooltip="Provides functions to be used in Slave callbacks to send data back to the master."];
+}
