@@ -1,5 +1,7 @@
 = lib60870.NET 2.3.0 User Guide
 
+*Copyright 2025 MZ Automation GmbH*
+
 == Introduction
 
 lib60870.NET is an implementation of the IEC 60870-5 protocol for client (master station) and server (controlled station).
