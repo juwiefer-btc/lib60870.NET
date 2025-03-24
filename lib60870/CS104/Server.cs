@@ -255,6 +255,16 @@ namespace lib60870.CS104
             DebugLog("Queue contains " + numberOfAsduInQueue + " messages (oldest: " + oldestQueueEntry + " latest: " + latestQueueEntry + ")");
         }
 
+        public void Clear()
+        {
+            lock (enqueuedASDUs)
+            {
+                numberOfAsduInQueue = 0;
+                oldestQueueEntry = -1;
+                latestQueueEntry = -1;
+            }
+        }
+
         public void LockASDUQueue()
         {
             Monitor.Enter(enqueuedASDUs);
@@ -541,6 +551,30 @@ namespace lib60870.CS104
             {
                 asduQueue.EnqueueAsdu(asdu);
             }
+        }
+
+        /// <summary>
+        /// Checks if any of the connections is active, indicating that
+        /// enqueued ASDUs actually are expected to be sent.
+        /// </summary>
+        public bool HasActiveConnection()
+        {
+            foreach (ClientConnection connection in connections)
+                if (connection.IsActive)
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Clears asduQueue and closes all active connections, forcing SCADA to issue a (general) interrogation command
+        /// </summary>
+        public void Reset()
+        {
+            asduQueue.Clear();
+            foreach (ClientConnection connection in connections)
+                if (connection.IsActive)
+                    connection.Close();
+            // SCADA system can now reactivate/reopen connections and must issue (general) interrogation command
         }
     }
 
