@@ -65,7 +65,7 @@ while [ -z "$1" ]; do
 done
 
 while [ -z "$2" ]; do
-  read -p "Enter option (prepare/release/formatFiles/all): " OPTION_INPUT
+  read -p "Enter option ([0]prepare/[1]release/[2]formatFiles/[3]all): " OPTION_INPUT
   set -- "$1" "$OPTION_INPUT"
 done
 
@@ -76,16 +76,16 @@ OPTION="$2"
 
 # Execute option case
 case "$OPTION" in
-  prepare)
+  0)
     prepare_folder
     ;;
-  release)
+  1)
     create_release_folder
     ;;
-formatFiles)
+2)
 	format_cs_files
 	;;
-  all)
+  3)
 	format_cs_files
     prepare_folder
 	create_release_folder

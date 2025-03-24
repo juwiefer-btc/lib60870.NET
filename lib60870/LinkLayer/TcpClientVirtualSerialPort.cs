@@ -266,8 +266,8 @@ namespace lib60870.linklayer
 
 
         /*************************
-		 * Stream implementation 
-		 */
+         * Stream implementation 
+         */
 
         public override int Read(byte[] buffer, int offset, int count)
         {

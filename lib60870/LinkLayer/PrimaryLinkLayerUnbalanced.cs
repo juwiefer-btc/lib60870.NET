@@ -597,8 +597,8 @@ namespace lib60870.linklayer
         }
 
         /********************************
-		 * IPrimaryLinkLayerUnbalanced
-		 ********************************/
+         * IPrimaryLinkLayerUnbalanced
+         ********************************/
 
 
         public void ResetCU(int slaveAddress)

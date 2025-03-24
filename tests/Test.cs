@@ -2004,9 +2004,9 @@ namespace tests
             connection.Close();
             server.Stop();
 
-            //	Assert.AreEqual (5, connection.GetStatistics ().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
+            //    Assert.AreEqual (5, connection.GetStatistics ().RcvdMsgCounter); /* STARTDT_CON + ASDU + TESTFR_CON */
 
-            //	Assert.AreEqual (0, connection.GetStatistics ().RcvdTestFrConCounter);
+            //    Assert.AreEqual (0, connection.GetStatistics ().RcvdTestFrConCounter);
         }
 
 

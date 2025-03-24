@@ -29,7 +29,7 @@ namespace lib60870.linklayer
     /// Will be called by the stack when the state of a link layer connection changes
     /// </summary>
     /// <param name="address">Address of the slave (only used for unbalanced master mode)</param>
-	public delegate void LinkLayerStateChanged(object parameter, int address, LinkLayerState newState);
+    public delegate void LinkLayerStateChanged(object parameter, int address, LinkLayerState newState);
 
     public enum LinkLayerState
     {

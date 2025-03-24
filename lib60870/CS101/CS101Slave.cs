@@ -48,8 +48,8 @@ namespace lib60870
             }
 
             /********************************************
-			 * IASDUSender
-			 ********************************************/
+             * IASDUSender
+             ********************************************/
 
             void IMasterConnection.SendASDU(ASDU asdu)
             {
@@ -78,8 +78,8 @@ namespace lib60870
             }
 
             /********************************************
-			 * ISecondaryApplicationLayer
-			 ********************************************/
+             * ISecondaryApplicationLayer
+             ********************************************/
 
             bool ISecondaryApplicationLayer.IsClass1DataAvailable()
             {
@@ -119,8 +119,8 @@ namespace lib60870
             }
 
             /********************************************
-			 * END ISecondaryApplicationLayer
-			 ********************************************/
+             * END ISecondaryApplicationLayer
+             ********************************************/
 
             private LinkLayer linkLayer = null;
 

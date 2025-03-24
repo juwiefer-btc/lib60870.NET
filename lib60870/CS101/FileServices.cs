@@ -105,7 +105,7 @@ namespace lib60870.CS101
     /// <summary>
     /// File ready handler. Will be called by the FileServer when a master sends a FILE READY (file download announcement) message to the slave.
     /// </summary>
-	public delegate IFileReceiver FileReadyHandler(object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile);
+    public delegate IFileReceiver FileReadyHandler(object parameter, int ca, int ioa, NameOfFile nof, int lengthOfFile);
 
     /// <summary>
     /// Simple implementation of IFileProvider that can be used to provide transparent files. Derived classed should override the
