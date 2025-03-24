@@ -1,5 +1,12 @@
 #!/bin/bash
 
+###### Function to replace tabs with spaces in all .cs files################
+format_cs_files() {
+  echo "Formatting .cs files: Replacing tabs with spaces..."
+  find . -type f -name "*.cs" -exec sed -i 's/\t/    /g' {} +
+  echo "Formatting completed!"
+}
+
 #########Clean directory#########################
 clean_build_directories()
 {
@@ -58,7 +65,7 @@ while [ -z "$1" ]; do
 done
 
 while [ -z "$2" ]; do
-  read -p "Enter option (prepare/release/all): " OPTION_INPUT
+  read -p "Enter option (prepare/release/formatFiles/all): " OPTION_INPUT
   set -- "$1" "$OPTION_INPUT"
 done
 
@@ -75,7 +82,11 @@ case "$OPTION" in
   release)
     create_release_folder
     ;;
+formatFiles)
+	format_cs_files
+	;;
   all)
+	format_cs_files
     prepare_folder
 	create_release_folder
 	clean_build_directories
