@@ -28,6 +28,43 @@ using System.Threading;
 
 namespace lib60870.CS104
 {
+    /// <summary>
+    /// Server events concerning listening
+    /// </summary>
+    public class ServerStateEvent {
+
+        private bool nowListening;
+        private bool fatal;
+        private Exception occurredException;
+        /// <summary>
+        /// Either true (by Start()) or false (by Stop() or exception)
+        /// </summary>
+        public bool NowListening
+        {
+            get { return nowListening; }
+        }
+        /// <summary>
+        /// Is it a fatal exception (while listening) or not (no exception or while closing)
+        /// </summary>
+        public bool Fatal
+        {
+            get { return fatal; }
+        }
+        /// <summary>
+        /// Either null (by Start() and Stop() or caught exception)
+        /// </summary>
+        public Exception OccurredException
+        {
+            get { return occurredException; }
+        }
+        internal ServerStateEvent(bool nowListening, bool fatal, Exception occurredException)
+        {
+            this.nowListening = nowListening;
+            this.fatal = fatal;
+            this.occurredException = occurredException;
+        }
+    }
+    public delegate void ServerStateEventHandler(object parameter, ServerStateEvent stateEvent);
 
     /// <summary>
     /// Connection request handler is called when a client tries to connect to the server.
@@ -467,6 +504,19 @@ namespace lib60870.CS104
             redGroups.Add(redundancyGroup);
         }
 
+        public ServerStateEventHandler serverStateEventHandler = null;
+        public object serverStateEventHandlerParameter = null;
+        /// <summary>
+        /// Sets a callback handler for server state changes.
+        /// </summary>
+        /// <param name="handler">Handler.</param>
+        /// <param name="parameter">Parameter.</param>
+        public void SetServerStateEventHandler(ServerStateEventHandler handler, object parameter)
+        {
+            this.serverStateEventHandler = handler;
+            this.serverStateEventHandlerParameter = parameter;
+        }
+
         public ConnectionRequestHandler connectionRequestHandler = null;
         public object connectionRequestHandlerParameter = null;
 
@@ -584,6 +634,7 @@ namespace lib60870.CS104
         private void ServerAcceptThread()
         {
             running = true;
+            CallServerStateEventHandler(new ServerStateEvent(true, false, null));
 
             DebugLog("Waiting for connections...");
 
@@ -675,8 +726,13 @@ namespace lib60870.CS104
                 }
                 catch (Exception e)
                 {
-                    running = false;
-                    DebugLog("Exception: " + e.ToString());
+                    DebugLog("Exception: " + e.Message);
+                    bool socketExceptionDuringShutdown = !running && (e is SocketException);
+                    if (!socketExceptionDuringShutdown)
+                    {
+                        running = false;
+                        CallServerStateEventHandler(new ServerStateEvent(false, true, e));
+                    }
                 }
 
             }
@@ -767,6 +823,7 @@ namespace lib60870.CS104
         public void Stop()
         {
             running = false;
+            CallServerStateEventHandler(new ServerStateEvent(false, false, null));
 
             try
             {
@@ -774,9 +831,10 @@ namespace lib60870.CS104
                 {
                     listeningSocket.Shutdown(SocketShutdown.Both);
                 }
-                catch (SocketException ex)
+                catch (SocketException ex)   // seems to be side effect of Shutdown(). No idea how to avoid it.
                 {
-                    DebugLog("SocketException: " + ex.Message);
+                    DebugLog("SocketException: " + ex.Message + " with code " + ex.ErrorCode);
+                    // CallServerStateEventHandler(new ServerStateEvent(false, false, ex));
                 }
 
                 listeningSocket.Close();
@@ -790,6 +848,7 @@ namespace lib60870.CS104
             catch (Exception e)
             {
                 DebugLog("Exception: " + e.Message);
+                CallServerStateEventHandler(new ServerStateEvent(false, false, e));
             }
         }
 
@@ -833,6 +892,12 @@ namespace lib60870.CS104
                     redGroup.EnqueueASDU(asdu);
                 }
             }
+        }
+
+        internal void CallServerStateEventHandler(ServerStateEvent e)
+        {
+            if (serverStateEventHandler != null)
+                serverStateEventHandler(serverStateEventHandlerParameter, e);
         }
 
         internal void CallConnectionEventHandler(ClientConnection connection, ClientConnectionEvent e)
