@@ -689,11 +689,13 @@ namespace tests
 
             Server server = new Server(apciParameters, parameters);
 
-            server.SetLocalPort(20213);
+            int port = GetPort();
+
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", port, apciParameters, parameters);
 
             ConnectionException se = null;
 
@@ -961,11 +963,11 @@ namespace tests
 
             Server server = new Server(apciParameters, parameters);
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", port, apciParameters, parameters);
 
             SocketException se = null;
 
@@ -1011,11 +1013,11 @@ namespace tests
 
             server.DebugOutput = true;
 
-            server.SetLocalPort(20213);
+            server.SetLocalPort(port);
 
             server.Start();
 
-            Connection connection = new Connection("127.0.0.1", 20213, apciParameters, parameters);
+            Connection connection = new Connection("127.0.0.1", port, apciParameters, parameters);
 
             connection.DebugOutput = true;
 
