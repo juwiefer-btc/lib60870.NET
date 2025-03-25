@@ -4,6 +4,7 @@ using lib60870.CS104;
 using NUnit.Framework;
 using System;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace tests
@@ -183,8 +184,6 @@ namespace tests
             Assert.AreEqual(true, bcr.Adjusted);
             Assert.AreEqual(0, bcr.SequenceNumber);
             Assert.AreEqual(0, bcr.Value);
-
-
         }
 
         [Test()]
@@ -264,7 +263,6 @@ namespace tests
             Assert.AreEqual(time.Minute, csc.NewTime.Minute);
             Assert.AreEqual(time.Second, csc.NewTime.Second);
             Assert.AreEqual(time.Millisecond, csc.NewTime.Millisecond);
-
         }
 
         [Test()]
@@ -343,7 +341,6 @@ namespace tests
             Assert.AreEqual(45, e.Timestamp.Minute);
             Assert.AreEqual(23, e.Timestamp.Second);
             Assert.AreEqual(538, e.Timestamp.Millisecond);
-
         }
 
         [Test()]
@@ -382,9 +379,7 @@ namespace tests
 
             Assert.AreEqual(101, cic.ObjectAddress);
             Assert.AreEqual(24, cic.QCC);
-
         }
-
 
         [Test()]
         public void TestSetpointCommandShort()
@@ -406,7 +401,6 @@ namespace tests
             Assert.AreEqual(102, sc.ObjectAddress);
             Assert.AreEqual(-1.0f, sc.Value, 0.001f);
             Assert.AreEqual(true, sc.QOS.Select);
-
         }
 
         [Test()]
@@ -451,7 +445,6 @@ namespace tests
             Assert.AreEqual(time.Minute, sc.Timestamp.Minute);
             Assert.AreEqual(time.Second, sc.Timestamp.Second);
             Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
-
         }
 
         [Test()]
@@ -479,7 +472,6 @@ namespace tests
         [Test()]
         public void TestSetpointCommandScaledWithCP56Time2a()
         {
-
             DateTime dateTime = DateTime.UtcNow;
 
             CP56Time2a time = new CP56Time2a(dateTime);
@@ -583,8 +575,6 @@ namespace tests
             Assert.AreEqual(time.Second, sc.Timestamp.Second);
             Assert.AreEqual(time.Millisecond, sc.Timestamp.Millisecond);
         }
-
-
 
         [Test()]
         public void TestStepPositionInformation()
@@ -731,7 +721,16 @@ namespace tests
 
             Assert.IsNotNull(se);
             Assert.AreEqual(se.Message, "already connected");
-            Assert.AreEqual(10056, ((SocketException)se.InnerException).ErrorCode);
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Assert.AreEqual(106, ((SocketException)se.InnerException).ErrorCode);
+            }
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.AreEqual(10056, ((SocketException)se.InnerException).ErrorCode);
+            }
 
             connection.Close();
 
@@ -764,8 +763,6 @@ namespace tests
             }
             return true;
         }
-
-
 
         [Test()]
         public void TestAddUntilOverflow()
@@ -940,7 +937,17 @@ namespace tests
 
             Assert.IsNotNull(se);
             Assert.AreEqual(se.Message, "not connected");
-            Assert.AreEqual(10057, ((SocketException)se.InnerException).ErrorCode);
+
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Assert.AreEqual(107, ((SocketException)se.InnerException).ErrorCode);
+            }
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.AreEqual(10057, ((SocketException)se.InnerException).ErrorCode);
+            }
 
             server.Stop();
         }
