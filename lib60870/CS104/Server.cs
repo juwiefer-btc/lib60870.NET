@@ -907,11 +907,11 @@ namespace lib60870.CS104
 
         internal void CallConnectionEventHandler(ClientConnection connection, ClientConnectionEvent e)
         {
-            if (connection.State == MasterConnectionState.M_CON_STATE_STARTED)
-            {
+            // if (connection.State == MasterConnectionState.M_CON_STATE_STARTED)
+            // {
                 if (connectionEventHandler != null)
                     connectionEventHandler(connectionEventHandlerParameter, connection, e);
-            }
+            // }
         }
 
         internal void Activated(ClientConnection activeConnection)
