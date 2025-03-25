@@ -894,6 +894,11 @@ namespace lib60870.CS104
             }
         }
 
+        public IEnumerable<ClientConnection> GetAllOpenConnections()
+        {
+            return allOpenConnections;
+        }
+
         internal void CallServerStateEventHandler(ServerStateEvent e)
         {
             if (serverStateEventHandler != null)

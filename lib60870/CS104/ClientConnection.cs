@@ -134,7 +134,7 @@ namespace lib60870.CS104
         /// <returns>
         /// The ASDU queue containing low-priority ASDUs.
         /// </returns>
-        internal ASDUQueue GetASDUQueue()
+        public ASDUQueue GetASDUQueue()
         {
             return lowPrioQueue;
         }
