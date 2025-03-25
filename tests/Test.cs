@@ -962,7 +962,7 @@ namespace tests
             APCIParameters apciParameters = new APCIParameters();
 
             Server server = new Server(apciParameters, parameters);
-
+            int port = GetPort();
             server.SetLocalPort(port);
 
             server.Start();
@@ -1012,7 +1012,7 @@ namespace tests
             Server server = new Server(apciParameters, parameters);
 
             server.DebugOutput = true;
-
+            int port = GetPort();
             server.SetLocalPort(port);
 
             server.Start();
@@ -1026,6 +1026,8 @@ namespace tests
                 ConnectionException se = null;
 
                 connection.Connect();
+
+                Thread.Sleep(1000);
 
                 server.Stop();
 
@@ -3548,7 +3550,7 @@ namespace tests
                     Console.WriteLine($"Number of queue entries: {numberOfQueueEntries}");
                     waitTime = 1000;
 
-                    if (enqueuedMessage == server.MaxQueueSize)
+                    if (enqueuedMessage >= server.MaxQueueSize)
                         Assert.AreEqual(server.MaxQueueSize, numberOfQueueEntries);
                     else
                         Assert.AreEqual(enqueuedMessage, numberOfQueueEntries);
@@ -3634,7 +3636,7 @@ namespace tests
                     int numberOfQueueEntries = server.GetNumberOfQueueEntries(redGroup);
                     Console.WriteLine($"Number of queue entries: {numberOfQueueEntries}");
                     waitTime = 1000;
-                    if (enqueuedMessage == server.MaxQueueSize)
+                    if (enqueuedMessage >= server.MaxQueueSize)
                         Assert.AreEqual(server.MaxQueueSize, numberOfQueueEntries);
                     else
                         Assert.AreEqual(enqueuedMessage, numberOfQueueEntries);
