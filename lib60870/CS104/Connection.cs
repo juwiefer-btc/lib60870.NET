@@ -424,7 +424,7 @@ namespace lib60870.CS104
         /// Sends an S-Message to the remote device. 
         /// This message contains a sequence number and is used for communication control.
         /// </summary>
-        private void SendSMessage()
+        public void SendSMessage()
         {
             byte[] msg = new byte[6];
 
