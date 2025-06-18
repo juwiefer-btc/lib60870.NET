@@ -676,7 +676,7 @@ namespace lib60870.CS104
                         }
 
                         sentASDUs[currentIndex].entryTime = timestamp;
-                        sentASDUs[currentIndex].queueIndex = index;
+                        sentASDUs[currentIndex].queueIndex = -1;      // highPrioQueue does not need confirmation
                         sentASDUs[currentIndex].seqNo = SendIMessage(asdu);
                         sentASDUs[currentIndex].sentTime = SystemUtils.currentTimeMillis();
 
