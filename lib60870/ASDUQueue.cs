@@ -279,6 +279,7 @@ namespace lib60870
                 NumberOfAsduInQueue--;
 
                 int currentIndex = oldestQueueEntry;
+                oldestQueueEntry = (oldestQueueEntry + 1) % maxQueueSize;
 
                 BufferFrame bufferFrame = enqueuedASDUs[currentIndex].asdu;
 
