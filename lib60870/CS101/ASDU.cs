@@ -249,16 +249,9 @@ namespace lib60870.CS101
 
         public byte[] AsByteArray()
         {
-            int expectedSize = parameters.MaxAsduLength - spaceLeft;
-
-            BufferFrame frame = new BufferFrame(new byte[expectedSize], 0);
-
+            BufferFrame frame = new BufferFrame(new byte[260], 0);
             Encode(frame, parameters);
-
-            if (frame.GetMsgSize() == expectedSize)
-                return frame.GetBuffer();
-            else
-                return null;
+            return frame.GetBuffer();
         }
 
         /// <summary>
